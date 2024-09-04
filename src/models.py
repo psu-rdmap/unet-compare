@@ -38,7 +38,7 @@ class Encoder:
     def unet_vanilla_encoder(self):
         return keras.Sequential(
             [                
-                keras.Input(self.image_shape),
+                keras.Input(self.data['input_shape']),
                 
                 ConvBlock(self.encoder_filters[0], self.batchnorm, self.l2_reg, name = 'conv_block_00'),
                 MaxPooling2D(pool_size=2, name='pool_0'),
@@ -61,7 +61,7 @@ class Encoder:
         return tf.keras.applications.EfficientNetB7(
             include_top  = False,
             weights      = 'imagenet',
-            input_shape  = self.image_shape,
+            input_shape  = self.data['input_shape'],
         )
     
 
@@ -117,7 +117,7 @@ class Decoder:
     
     def get_encoder_outputs(self):
         # create Input object
-        input = keras.Input(self.image_shape)
+        input = keras.Input(self.data['input_shape'])
         # get encoder outputs from specific layers (provided by encoder_stages tuple in configs)
         outputs_dict = {layer: self.encoder.model.get_layer(layer).output for layer in self.encoder_stages}
         # define encoder as Functional model with outputs corresponding to the pre-defined stages

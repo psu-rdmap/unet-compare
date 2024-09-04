@@ -1,14 +1,5 @@
 {
-    "image_shape" : [1024, 1024, 1],
-    "batch_size" : 1,
-    "dataset_shuffle_seed" : 42,
-    "eightfold_augment" : true,
-    "dataset_prefix" : "bubble",
     "root" : "~/unet-compare/",
-    "images_ext" : "jpg", 
-    "labels_ext" : "png", 
-    "images_path_prefix" : "images", 
-    "labels_path_prefix" : "labels",
     "results_dir_path" : "",
     "encoder_name" : "Vanilla",
     "encoder_filters" : [32, 64, 128, 256, 512],
@@ -17,21 +8,37 @@
     "training_loop" : "Default",
     "learning_rate" : 1e-3,
     "l2_reg" : 1e-3,
-    "batchnorm" : true,
+    "batchnorm" : true, 
     "num_folds" : null,
     "restart_fold" : null,
     "num_epochs" : 100,
     "early_stopping" : true,
     "patience" : 25,
     "data" : {
+        "image_ext" : "jpg",
+        "annotation_ext" : "png",
+        "dataset_prefix" : "gb",
+        "input_shape" : [1024, 1024],
+        "batch_size" : 1,
+        "augment" : true,
+        "auto_split" : false,
         "train" : [
-            1,
-            2,
-            3
+            "9",
+            "11",
+            "12",
+            "14",
+            "16",
+            "24",
+            "25",
+            "26",
+            "30",
+            "31"
         ],
         "val" : [
-            4,
-            5
+            "1",
+            "4",
+            "5",
+            "7"
         ]
     }
 }

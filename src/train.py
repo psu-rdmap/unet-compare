@@ -41,7 +41,7 @@ with open(args.configs, 'r') as f:
     configs = json.load(f)
 
 #from utils import test_configs
-#test_configs(configs)
+test_configs(configs)
 
 def main():
     # print input to user for confirmation

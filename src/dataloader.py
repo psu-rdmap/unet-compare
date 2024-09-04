@@ -1,18 +1,41 @@
 from glob import glob
-from os import mkdir
+from os import mkdir, listdir
 from os.path import join
-#import tensorflow as tf
-#AUTOTUNE = tf.data.AUTOTUNE
+import shutil
+import tensorflow as tf
+
+AUTOTUNE = tf.data.AUTOTUNE
+tf.random.set_seed(3051)
 
 def create_dataset(configs):
+    """
+    Create the training dataset and return a Tensorflow Dataset instance of it
+
+    Parameters:
+    ---------- 
+    configs : dict
+        Dictionary containing all data necessary to find the data and build the dataset
+    
+    Returns:
+    --------
+    Training and validation Dataset instances : dict
+    """
+    
     # create directory structure
     ds_path = join(configs['root'], 'dataset')
-    create_dstree(ds_path)
+    train_val_paths = create_dstree(ds_path)
+
+    # split dataset
+    data = configs['data']
 
     # copy images into dataset directory
-    data_path = join(configs['root'], configs['dataset_prefix'])
-    populate_dstree(data_path, ds_path)
+    populate_dstree(configs['root'], data)
 
+    # augment dataset
+    augment_dataset()
+
+    # create a Tensorflow Dataset object
+    return define_dataset(train_val_paths, data)
 
 
 def create_dstree(dest):
@@ -23,7 +46,10 @@ def create_dstree(dest):
     ---------- 
     dest : str
         Desired path to dataset
-      
+    
+    Returns:
+    --------
+    Full paths to image train and val sets : dict
     """
 
     # define directories
@@ -38,94 +64,53 @@ def create_dstree(dest):
     for _, dir in locals().items():
         mkdir(dir)
 
-def populate_dstree(source, dest):
+    return {"train_path" : image_train_dir, "val_path" : image_val_dir}
+
+
+def populate_dstree(root, data_cfgs):
     """
     Copy files from data directory to empty dataset tree
 
     Parameters:
     ---------- 
-    source : str
-        Path to images and annotations
-    dest : str
-        Root of dataset tree
+    root : str
+        Root path of the project
+    data_cfgs : dict
+        Dataset creation data (dataset prefix, filenames, extensions, etc.)
       
     """
 
-    
+    # file sets
+    train_images = [image + data_cfgs['image_ext'] for image in data_cfgs['train']]
+    val_images = [image + data_cfgs['image_ext'] for image in data_cfgs['val']]
+
+    train_annotations = [annotation + data_cfgs['annotation_ext'] for annotation in data_cfgs['train']]
+    val_annotations = [annotation + data_cfgs['annotation_ext'] for annotation in data_cfgs['val']]
+
+    # source directories
+    image_source = join(root, 'data/', data_cfgs['dataset_prefix'], 'images/')
+    annotation_source = join(root, 'data/', data_cfgs['dataset_prefix'], 'annotations/')
+
+    # dest directories
+    image_train_dest = join(root, 'dataset/images/train')
+    image_val_dest = join(root, 'dataset/images/val')
+
+    annotation_train_dest = join(root, 'dataset/annotations/train')
+    annotation_val_dest = join(root, 'dataset/annotations/val')
+
+    # populate directories
+    copy_files(train_images, image_source, image_train_dest)
+    copy_files(val_images, image_source, image_val_dest)
+
+    copy_files(train_annotations, annotation_source, annotation_train_dest)
+    copy_files(val_annotations, annotation_source, annotation_val_dest)
 
 
-configs = dict(
-    root = '/home/aidenochoa/unet-compare/',
-    dataset_prefix = 'gb',
-)
-
-create_dataset(configs)
-
-"""
-def dataloader(configs):
-    
+def augment_dataset():
+    """
+    NOT IMPLIMENTED YET
 
 
-
-    # raw data paths
-    dataset_path = join(dataset_root, "images/")
-    training_data = "train/"
-    val_data = "val/"
-
-    TRAINSET_SIZE = len(glob(join(dataset_path, training_data) + f"*.{img_ext}"))
-    VALSET_SIZE = len(glob(join(dataset_path, val_data) + f"*.{img_ext}"))
-
-    train_dataset = tf.data.Dataset.list_files(join(dataset_path, training_data) + f"*.{img_ext}", seed=SEED)
-    train_dataset = train_dataset.map(lambda x: parse_image(x, img_ext, lab_ext))
-
-    val_dataset = tf.data.Dataset.list_files(join(dataset_path, val_data) + f"*.{img_ext}", seed=SEED)
-    val_dataset = val_dataset.map(lambda x: parse_image(x, img_ext, lab_ext))
-
-    BUFFER_SIZE = 48
-
-    dataset = {"train": train_dataset, "val": val_dataset}
-
-    # -- Train Dataset --#
-    dataset['train'] = dataset['train'].map(load_image, num_parallel_calls=AUTOTUNE)
-    dataset['train'] = dataset['train'].shuffle(buffer_size=BUFFER_SIZE, seed=SEED)
-    dataset['train'] = dataset['train'].repeat()
-    dataset['train'] = dataset['train'].batch(BATCH_SIZE)
-    dataset['train'] = dataset['train'].prefetch(buffer_size=AUTOTUNE)
-
-    # -- Validation Dataset --#
-    dataset['val'] = dataset['val'].map(load_image)
-    dataset['val'] = dataset['val'].repeat()
-    dataset['val'] = dataset['val'].batch(BATCH_SIZE)
-    dataset['val'] = dataset['val'].prefetch(buffer_size=AUTOTUNE)
-
-    STEPS_PER_EPOCH = TRAINSET_SIZE // BATCH_SIZE
-    VALIDATION_STEPS = VALSET_SIZE // BATCH_SIZE
-
-    return dataset, STEPS_PER_EPOCH, VALIDATION_STEPS
-
-def parse_image(img_path, img_ext, lab_ext):
-    # input: file path to image
-    # output: image (greyscale) and corresponding mask as dictionary value
-
-    image = tf.io.read_file(img_path)
-    image = tf.image.decode_png(image, channels=3)
-
-    mask_path = tf.strings.regex_replace(img_path, "images", "labels")
-    mask_path = tf.strings.regex_replace(mask_path, img_ext, lab_ext)
-    mask = tf.io.read_file(mask_path)
-    mask = tf.image.decode_png(mask, channels=1)
-
-    return {'image': image, 'segmentation_mask': mask}
-
-@tf.function
-def load_image(datapoint: dict) -> tuple:
-    # convert to tensors and normalize images
-    input_image = tf.cast(datapoint['image'], tf.float32) / 255.0
-    input_mask = tf.cast(datapoint['segmentation_mask'], tf.float32) / 255.0
-    return input_image, input_mask
-
-# function for augmenting a given dataset
-def augment(root, image_list, save_format):
     # using the root path to a directory containing images (e.g. dataset/images/train/)
     #     also using the list of images in said directory
     #     augment and save them as the 'save_format' type (e.g. jpg or png)
@@ -162,14 +147,122 @@ def augment(root, image_list, save_format):
 
         # remove original image and label
         remove(im)
+    """
+    pass
 
 
-# function for copying images/labels into the generated dataset
-def copy_files(filename_set, in_dir, out_dir):
-    # using the filenames in the list 'filename_set'
-    # copy the file from the 'in_dir' into the 'out_dir'
-    for file in filename_set:
-        src = join(in_dir, file)
-        dst = join(out_dir, file)
+def define_dataset(train_val_paths, data_cfgs):
+    """
+    Use created dataset to define Tensorflow Dataset instances for the training and validation sets
+
+    Parameters:
+    ---------- 
+    data_cfgs : dict
+        Dictionary containing all data necessary to find the data and build the dataset
+    
+    Returns:
+    --------
+    dataset : dict
+        Dictionary of training and validation instantiated Dataset objects
+    STEPS_PER_EPOCH : int
+        Number of steps to take when training for a single pass over all available training data
+    VALIDATION_STEPS : int
+        Number of steps to take during evaluation of the validation set after an epoch has completed
+   
+    """
+    
+    # get size of training and validation sets
+    TRAINSET_SIZE = len(listdir(train_val_paths['train_path']))
+    VALSET_SIZE = len(listdir(train_val_paths['val_path']))
+
+    # initialize Dataset objects with a list of filenames
+    train_dataset = tf.data.Dataset.list_files(train_val_paths['train_path'] + '/*')
+    val_dataset = tf.data.Dataset.list_files(train_val_paths['val_path'] + '/*')
+    
+    # replace every image path in the training and validation directories with a loaded image and annotation pair
+    train_dataset = train_dataset.map(lambda x: parse_image(x, data_cfgs), num_parallel_calls=AUTOTUNE)
+    val_dataset = val_dataset.map(lambda x: parse_image(x, data_cfgs), num_parallel_calls=AUTOTUNE)
+
+    BUFFER_SIZE = 48
+
+    # define dict to contain Dataset instances
+    dataset = {"train": train_dataset, "val": val_dataset}
+
+    # shuffle the training dataset and batch it
+    dataset['train'] = dataset['train'].shuffle(buffer_size=BUFFER_SIZE)
+    dataset['train'] = dataset['train'].repeat()
+    dataset['train'] = dataset['train'].batch(data_cfgs['batch_size'])
+    dataset['train'] = dataset['train'].prefetch(buffer_size=AUTOTUNE)
+
+    # batch the validation dataset
+    dataset['val'] = dataset['val'].repeat()
+    dataset['val'] = dataset['val'].batch(1)
+    dataset['val'] = dataset['val'].prefetch(buffer_size=AUTOTUNE)
+
+    # determine number of steps to take in an epoch
+    STEPS_PER_EPOCH = TRAINSET_SIZE // data_cfgs['batch_size']
+    VALIDATION_STEPS = VALSET_SIZE // 1
+
+    return dataset, STEPS_PER_EPOCH, VALIDATION_STEPS
+
+
+def copy_files(files, source, dest):
+    """
+    Copies all provided files from a source directory to a destination directory
+
+    Parameters:
+    ---------- 
+    files : list
+        Filenames in source directory to be copied
+    source : str
+        Path to current location of files
+    dest : str
+        Path to where files are to be copied to
+      
+    """
+
+    for file in files:
+        src = join(source, file)
+        dst = join(dest, file)
         shutil.copy(src, dst)
-"""
+
+
+@tf.function
+def parse_image(img_path, data_cfgs):
+    """
+    Load an image and its annotation then resize it and normalize it
+
+    Parameters:
+    ---------- 
+    img_path : tf.str
+        Path to a given image to be loaded
+    data_cfgs : dict
+        Dictionary containing all info necessary to load and pre-process an image
+    
+    Returns:
+    --------
+    Loaded image/annotation pair : dict
+    
+    """
+    
+    # read image and load it into 3 channels (pre-trained backbones require 3)
+    image = tf.io.read_file(img_path)
+    image = tf.image.decode_png(image, channels=3)
+
+    # adjust path to lead to the corresponding annotation and load it
+    annotation_path = tf.strings.regex_replace(img_path, "images", "annotations")
+    annotation_path = tf.strings.regex_replace(annotation_path, data_cfgs['image_ext'], data_cfgs['annotation_ext'])
+    annotation = tf.io.read_file(annotation_path)
+    annotation = tf.image.decode_png(annotation, channels=1)
+
+    # resize image and annotation
+    resize_shape = tf.convert_to_tensor(data_cfgs['input_shape'], dtype=tf.int32)
+    image = tf.image.resize(image, resize_shape, method=tf.image.ResizeMethod.LANCZOS3, preserve_aspect_ratio=True)
+    annotation = tf.image.resize(annotation, resize_shape, method=tf.image.ResizeMethod.LANCZOS3, preserve_aspect_ratio=True)
+
+    # convert tensor objects to floats and normalize images ([0,255] -> [0.0, 1.0])
+    image = tf.cast(image, tf.float32) / 255.0
+    annotation = tf.cast(annotation, tf.float32) / 255.0
+
+    # return a dict containing the loaded image/annotation pair
+    return {'image': image, 'annotation': annotation}
