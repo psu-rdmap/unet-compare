@@ -1,14 +1,21 @@
+import os
+
+# suppress warnings when tensorflow is imported
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['PYCARET_CUSTOM_LOGGING_LEVEL'] = 'CRITICAL'
+
 import argparse
-import os, sys
+import json
+import loops
+"""
 from os import listdir, mkdir, remove
 from os.path import join, splitext, exists, isdir, split
 import datetime
 from dataloader import dataloader
 import tensorflow as tf
-from keras.models import Model
-import models
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, ModelCheckpoint, LearningRateScheduler
+
+
+
 from utils import get_model, copy_files, augment, parse_input
 import re
 import shutil
@@ -20,82 +27,36 @@ from imageio import imread
 from keras.preprocessing.image import save_img
 import csv
 from matplotlib import pyplot as plt
-import os
+"""
 
-# -----------Obtaining User Specifications-----------
-
+# get input from user
 parser = argparse.ArgumentParser(description='U-Net Training')
 
-parser.add_argument('--dataset', default='dataset.dat', type=str,
-                    help='Path to file containing dataset information')
-parser.add_argument('--training', default='training.dat', type=str,
-                    help='Path to file containing training information')
+parser.add_argument('configs', type=str, help='Path to configs for training and dataset parameters')
 
 args = parser.parse_args()
 
-# ---------------------------------------------------
+# load config dict and check input
+with open(args.configs, 'r') as f:
+    configs = json.load(f)
 
-# suppress warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['PYCARET_CUSTOM_LOGGING_LEVEL'] = 'CRITICAL'
-
-# check if gpu is available
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-print("\nNum GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-
-# get dataset and training info
-tr_info, ds_fns = parse_input(args.training, args.dataset)
-
-# add root to PATH environment variable
-sys.path.append(tr_info['root'])
-
-schedulers = ('step', 'misc')
+#from utils import test_configs
+#test_configs(configs)
 
 def main():
-    images_path = join(tr_info['root'], tr_info['images_path'])
-    labels_path = join(tr_info['root'], tr_info['labels_path'])
-    
-    cv_toggle = eval(tr_info['cross_validation'])
-    num_folds = eval(tr_info['num_folds'])
-    restart_fold = eval(tr_info['restart_fold'])
-    scheduler = tr_info['learning_scheduler']
-    if scheduler in schedulers:
-        schedule_toggle = True
-    elif scheduler == 'False' or scheduler == 'None':
-        schedule_toggle = False
-    else:
-        raise Exception(f'Learning rate scheduler {scheduler} not found')
-    early_stopping = eval(tr_info['early_stopping'])
-    if early_stopping:
-        es_toggle = True
-        if cv_toggle:
-            raise Exception("Early stopping must be false if cross validation is activated")
-    else:
-        es_toggle = False
+    # print input to user for confirmation
+    print('-'*20 + ' User Input ' + '-'*20)
+    for key, val in configs.items():
+        print(key + ':', val)
+    print('-'*52)
 
+    # run the chosen training loop
+    if configs['training_loop'] == 'Default':
+        loops.default(configs)
+    elif configs['training_loop'] == 'CrossValidation':
+        loops.cross_val(configs)
 
-    # confirm user-specified information
-    print("Model:", tr_info['model'])
-    print("LR:", tr_info['learning_rate'])
-    print("L2:", tr_info['l2_regularization'])
-    print("Batch Size:", tr_info['batch_size'])
-    print("Batchnorm:", tr_info['batchnorm'])
-    print("Max Epochs:", tr_info['max_epochs'])
-    if schedule_toggle:
-        if scheduler == schedulers[0]:
-            print("Scheduler: {} w/ decay {} per {} epochs".format(scheduler, tr_info['decay_fact'], tr_info['decay_freq']))
-    print("Cross Validation:", tr_info['cross_validation'])
-    if cv_toggle:
-        print("Number of Folds:", tr_info['num_folds'])
-        print("Restart at Fold:", tr_info['restart_fold'])
-    print("Dataset:", tr_info['dataset_identifier'])
-    print("Augment:", tr_info['augment'])
-    if es_toggle:
-        print("Early Stopping: {} at {} epochs".format(early_stopping, tr_info['patience']))
-    else:
-        print("Early Stopping:", early_stopping)
-    print()
-    
+    """
     # create image/label train set lists and verify that every image exists in the provided paths
     image_train_fns = [(fn + '.' + tr_info['images_ext']) for fn in ds_fns['train']]
     label_train_fns = [re.sub(tr_info['images_ext'], tr_info['labels_ext'], im) for im in image_train_fns]
@@ -244,14 +205,12 @@ def main():
         create_latent_dataset(latent_ds_path, latent_image_train_set, latent_image_val_set, images_path, labels_path, tr_info['images_ext'], tr_info['labels_ext'], augment_toggle = eval(tr_info['augment']))
         
         # batch the latent dataset and return some training info
-        dataset, STEPS_PER_EPOCH, VALIDATION_STEPS = dataloader(latent_ds_path, eval(tr_info['batch_size']), tr_info['images_ext'], tr_info['labels_ext'])
+        
 
-        # load model
-        model = get_model(tr_info['model'], eval(tr_info['image_size']), eval(tr_info['l2_regularization']), eval(tr_info['batchnorm']))
+        
 
         # compile model
-        model.compile(optimizer=Adam(learning_rate=eval(tr_info['learning_rate'])), loss = 'binary_crossentropy',
-                      metrics= ['accuracy', 'Precision', 'Recall'])
+        
         
         # create additional results structure for cv
         if cv_toggle: 
@@ -269,8 +228,7 @@ def main():
             fold_results_dir = results_dir
         
         # define callbacks for saving results and early stopping
-        callbacks = [CSVLogger(join(fold_results_dir, "metrics.csv"), separator=',', append=False),
-                     ModelCheckpoint(join(fold_results_dir, "best_model_unet.h5"), verbose=1, save_best_only=True, save_weights_only=True)]
+        
         
         # add the listed scheduler    
         if schedule_toggle:
@@ -283,14 +241,7 @@ def main():
         
         print("\nStarting training...")
 
-        # train with latent dataset
-        model_history = model.fit(dataset['train'],
-                                  epochs=eval(tr_info['max_epochs']),
-                                  steps_per_epoch=STEPS_PER_EPOCH,
-                                  validation_steps=VALIDATION_STEPS,
-                                  validation_data=dataset['val'],
-                                  callbacks=callbacks,
-                                  verbose=2)
+        
         
         print("\nPlotting results...")
 
@@ -643,6 +594,7 @@ def check_filenames(image_set, path, ext):
             raise Exception("There is a null filename in the dataset input file!")
         elif fn not in listdir(path):
             raise Exception(f"File {fn} mentioned in the input file can not be found!")
+"""
 
 if __name__ == '__main__':
     main()

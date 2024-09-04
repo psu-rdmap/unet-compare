@@ -6,11 +6,6 @@ SEED = 42
 AUTOTUNE = tf.data.AUTOTUNE
 
 def dataloader(dataset_root, BATCH_SIZE, img_ext, lab_ext):
-    """
-    input: dataset root
-    output: tensorflow dataset
-    """
-
     # raw data paths
     dataset_path = join(dataset_root, "images/")
     training_data = "train/"
@@ -67,3 +62,52 @@ def load_image(datapoint: dict) -> tuple:
     input_image = tf.cast(datapoint['image'], tf.float32) / 255.0
     input_mask = tf.cast(datapoint['segmentation_mask'], tf.float32) / 255.0
     return input_image, input_mask
+
+# function for augmenting a given dataset
+def augment(root, image_list, save_format):
+    # using the root path to a directory containing images (e.g. dataset/images/train/)
+    #     also using the list of images in said directory
+    #     augment and save them as the 'save_format' type (e.g. jpg or png)
+    for i in image_list:
+        # extract file name without extension
+        base = splitext(i)[0]
+
+        # open image
+        im = join(root, i)
+        img = Image.open(im)
+        
+        # perform transformations on image
+        img_1 = img
+        img_2 = img.rotate(90)
+        img_3 = img.rotate(180)
+        img_4 = img.rotate(270)
+        img_5 = img.transpose(Image.FLIP_LEFT_RIGHT)
+        img_6 = img_2.transpose(Image.FLIP_TOP_BOTTOM)
+        img_7 = img.transpose(Image.FLIP_TOP_BOTTOM)
+        img_8 = img_2.transpose(Image.FLIP_TOP_BOTTOM)
+
+        # save augmentations
+        img_1.save(join(root, base + "_1." + save_format))
+        img_2.save(join(root, base + "_2." + save_format))
+        img_3.save(join(root, base + "_3." + save_format))
+        img_4.save(join(root, base + "_4." + save_format))
+        img_5.save(join(root, base + "_5." + save_format))
+        img_6.save(join(root, base + "_6." + save_format))
+        img_7.save(join(root, base + "_7." + save_format))
+        img_8.save(join(root, base + "_8." + save_format))
+
+        # delete image object
+        img.close()
+
+        # remove original image and label
+        remove(im)
+
+
+# function for copying images/labels into the generated dataset
+def copy_files(filename_set, in_dir, out_dir):
+    # using the filenames in the list 'filename_set'
+    # copy the file from the 'in_dir' into the 'out_dir'
+    for file in filename_set:
+        src = join(in_dir, file)
+        dst = join(out_dir, file)
+        shutil.copy(src, dst)
