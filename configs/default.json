@@ -1,0 +1,36 @@
+{
+    "image_shape" : [1024, 1024, 1],
+    "batch_size" : 1,
+    "eightfold_augment" : true,
+    "dataset_prefix" : "bubble",
+    "root" : "/storage/group/xvw5285/default/UNET/TRAINING/",
+    "images_ext" : "jpg", 
+    "labels_ext" : "png", 
+    "images_path_prefix" : "images", 
+    "labels_path_prefix" : "labels",
+    "results_dir_path" : "",
+    "encoder_name" : "Vanilla",
+    "encoder_filters" : [32, 64, 128, 256, 512],
+    "encoder_stages" : ["conv_block_00", "conv_block_10", "conv_block_20", "conv_block_30", "conv_block_40"],
+    "decoder_filters" : [512, 256, 128, 64, 32],
+    "training_loop" : "Default",
+    "learning_rate" : 1e-3,
+    "l2_reg" : 1e-3,
+    "batchnorm" : true,
+    "num_folds" : null,
+    "restart_fold" : null,
+    "num_epochs" : 100,
+    "early_stopping" : true,
+    "patience" : 25,
+    "data" : {
+        "train" : [
+            1,
+            2,
+            3
+        ],
+        "val" : [
+            4,
+            5
+        ]
+    }
+}
