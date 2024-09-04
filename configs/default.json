@@ -1,9 +1,10 @@
 {
     "image_shape" : [1024, 1024, 1],
     "batch_size" : 1,
+    "dataset_shuffle_seed" : 42,
     "eightfold_augment" : true,
     "dataset_prefix" : "bubble",
-    "root" : "/storage/group/xvw5285/default/UNET/TRAINING/",
+    "root" : "~/unet-compare/",
     "images_ext" : "jpg", 
     "labels_ext" : "png", 
     "images_path_prefix" : "images", 

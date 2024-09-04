@@ -1,11 +1,72 @@
 from glob import glob
+from os import mkdir
 from os.path import join
-import tensorflow as tf
+#import tensorflow as tf
+#AUTOTUNE = tf.data.AUTOTUNE
 
-SEED = 42
-AUTOTUNE = tf.data.AUTOTUNE
+def create_dataset(configs):
+    # create directory structure
+    ds_path = join(configs['root'], 'dataset')
+    create_dstree(ds_path)
 
-def dataloader(dataset_root, BATCH_SIZE, img_ext, lab_ext):
+    # copy images into dataset directory
+    data_path = join(configs['root'], configs['dataset_prefix'])
+    populate_dstree(data_path, ds_path)
+
+
+
+def create_dstree(dest):
+    """
+    Create the directory tree given the top-dataset directory path
+
+    Parameters:
+    ---------- 
+    dest : str
+        Desired path to dataset
+      
+    """
+
+    # define directories
+    image_dir = join(dest, 'images')
+    annotation_dir = join(dest, 'annotations')
+    image_train_dir = join(image_dir, 'train')
+    image_val_dir = join(image_dir, 'val')
+    annotation_train_dir = join(annotation_dir, 'train')
+    annotation_val_dir = join(annotation_dir, 'val')
+
+    # run through all directories defined in the function and make them
+    for _, dir in locals().items():
+        mkdir(dir)
+
+def populate_dstree(source, dest):
+    """
+    Copy files from data directory to empty dataset tree
+
+    Parameters:
+    ---------- 
+    source : str
+        Path to images and annotations
+    dest : str
+        Root of dataset tree
+      
+    """
+
+    
+
+
+configs = dict(
+    root = '/home/aidenochoa/unet-compare/',
+    dataset_prefix = 'gb',
+)
+
+create_dataset(configs)
+
+"""
+def dataloader(configs):
+    
+
+
+
     # raw data paths
     dataset_path = join(dataset_root, "images/")
     training_data = "train/"
@@ -111,3 +172,4 @@ def copy_files(filename_set, in_dir, out_dir):
         src = join(in_dir, file)
         dst = join(out_dir, file)
         shutil.copy(src, dst)
+"""
