@@ -36,7 +36,7 @@ def create_dataset(configs):
     populate_dstree(configs['root'], configs['data'])
 
     # augment dataset
-    augment_dataset(configs, train_val_paths['train'])
+    augment_dataset(configs, train_val_paths['train_path'])
 
     # create a Tensorflow Dataset object
     return define_dataset(train_val_paths, configs['data'])
@@ -131,36 +131,37 @@ def augment_dataset(configs, image_train_path):
         augment_single_image(img)
         augment_single_image(ann)
 
-    def augment_single_image(file_full_path):
-        # get file path pieces
-        path, fn_ext = split(file_full_path)
-        fn, ext = splitext(fn_ext)
 
-        # load file
-        file = cv2.imread(file_full_path)
-        
-        # perform transformations on file
-        file_1 = file                                              # original
-        file_2 = cv2.rotate(file, cv2.ROTATE_90_CLOCKWISE)         # rot90
-        file_3 = cv2.rotate(file, cv2.ROTATE_180)                  # rot180
-        file_4 = cv2.rotate(file, cv2.ROTATE_90_COUNTERCLOCKWISE)  # rot270
-        file_5 = cv2.flip(file, 1)                                 # xflip
-        file_6 = cv2.flip(file_2, 1)                               # rot90 + xflip
-        file_7 = cv2.flip(file_2, 0)                               # rot90 + yflip
-        file_8 = cv2.flip(file_3, 1)                               # rot90 + xflip
+def augment_single_image(file_full_path):
+    # get file path pieces
+    path, fn_ext = split(file_full_path)
+    fn, ext = splitext(fn_ext)
 
-        # save augmentations
-        cv2.imwrite(join(path, fn + '_1', ext), file_1)
-        cv2.imwrite(join(path, fn + '_2', ext), file_2)
-        cv2.imwrite(join(path, fn + '_3', ext), file_3)
-        cv2.imwrite(join(path, fn + '_4', ext), file_4)
-        cv2.imwrite(join(path, fn + '_5', ext), file_5)
-        cv2.imwrite(join(path, fn + '_6', ext), file_6)
-        cv2.imwrite(join(path, fn + '_7', ext), file_7)
-        cv2.imwrite(join(path, fn + '_8', ext), file_8)
+    # load file
+    file = cv2.imread(file_full_path)
+    
+    # perform transformations on file
+    file_1 = file                                              # original
+    file_2 = cv2.rotate(file, cv2.ROTATE_90_CLOCKWISE)         # rot90
+    file_3 = cv2.rotate(file, cv2.ROTATE_180)                  # rot180
+    file_4 = cv2.rotate(file, cv2.ROTATE_90_COUNTERCLOCKWISE)  # rot270
+    file_5 = cv2.flip(file, 1)                                 # xflip
+    file_6 = cv2.flip(file_2, 1)                               # rot90 + xflip
+    file_7 = cv2.flip(file_2, 0)                               # rot90 + yflip
+    file_8 = cv2.flip(file_3, 1)                               # rot90 + xflip
 
-        # remove original image and label
-        remove(file_full_path)
+    # save augmentations
+    cv2.imwrite(join(path, fn + '_1', ext), file_1)
+    cv2.imwrite(join(path, fn + '_2', ext), file_2)
+    cv2.imwrite(join(path, fn + '_3', ext), file_3)
+    cv2.imwrite(join(path, fn + '_4', ext), file_4)
+    cv2.imwrite(join(path, fn + '_5', ext), file_5)
+    cv2.imwrite(join(path, fn + '_6', ext), file_6)
+    cv2.imwrite(join(path, fn + '_7', ext), file_7)
+    cv2.imwrite(join(path, fn + '_8', ext), file_8)
+
+    # remove original image and label
+    remove(file_full_path)
 
 
 def define_dataset(train_val_paths, data_cfgs):
@@ -233,10 +234,9 @@ def copy_files(files, source, dest):
         Path to where files are to be copied to
     """
 
-    for file in files:
-        src = join(source, file)
-        dst = join(dest, file)
-        shutil.copy(src, dst)
+    for f in files:
+        src = join(source, f)
+        shutil.copy(src, dest)
 
 
 @tf.function
@@ -295,7 +295,7 @@ def split_data(configs):
     """
     
     # case 1: auto_split is on and training filenames are provided
-    if (configs['auto_split'] == True) and ('train' in configs['data']):       
+    if (configs['data']['auto_split'] == True) and ('train' in configs['data']):       
         # randomly select training and validation subsets
         train_fns, val_fns = auto_split(configs['data']['train'], configs['data']['val_hold_out'])
 
@@ -304,7 +304,7 @@ def split_data(configs):
         configs['data'].update({'val' : val_fns})
 
     # case 2: auto_split is on and no training filenames are provided
-    elif configs['auto_split'] == True:
+    elif configs['data']['auto_split'] == True:
         # get fns from image file source
         fns_path = join(configs['root'], 'data/', configs['data']['dataset_prefix'], 'images/')
         fns = listdir(fns_path)

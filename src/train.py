@@ -20,6 +20,7 @@ args = parser.parse_args()
 with open(args.configs, 'r') as f:
     configs = json.load(f)
 
+print()
 check_input(configs)
 
 def main():

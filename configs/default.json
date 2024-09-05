@@ -1,5 +1,5 @@
 {
-    "root" : "~/unet-compare/",
+    "root" : "/storage/group/xvw5285/default/unet-compare/",
     "results_dir_path" : "results",
     "encoder_name" : "Vanilla",
     "encoder_filters" : [32, 64, 128, 256, 512],
@@ -15,15 +15,14 @@
     "early_stopping" : true,
     "patience" : 25,
     "data" : {
-        "image_ext" : "jpg",
-        "annotation_ext" : "png",
+        "image_ext" : ".jpg",
+        "annotation_ext" : ".png",
         "dataset_prefix" : "gb",
         "input_shape" : [1024, 1024],
         "batch_size" : 1,
         "augment" : true,
         "auto_split" : false,
         "train" : [
-            "9",
             "11",
             "12",
             "14",
@@ -38,7 +37,8 @@
             "1",
             "4",
             "5",
-            "7"
+            "7",
+	    "9"
         ]
     }
 }
