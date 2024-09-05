@@ -2,11 +2,12 @@ import models
 import dataloader
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
+from os.path import join
 
 
 def default(configs):
     # dataset
-    dataset, STEPS_PER_EPOCH, VALIDATION_STEPS = dataloader.create_dataset(configs)
+    dataset, train_steps, val_steps = dataloader.create_dataset(configs)
 
     # model
     model = models.Decoder(**configs)
@@ -18,34 +19,33 @@ def default(configs):
         metrics = ['accuracy', 'Precision', 'Recall']
     )
 
-    # training
+    # training callbacks
     callbacks = [
         CSVLogger(
-            join(results_dir, "metrics.csv"), 
+            join(configs['root'], configs['results_dir_path'], 'metrics.csv'), 
             separator=',', 
             append=False
         ),
         ModelCheckpoint(
-            join(results_dir, "best_model_unet.h5"), 
+            join(configs['root'], configs['results_dir_path'], 'best_model_unet.h5'), 
             verbose=1, 
             save_best_only=True, 
             save_weights_only=True
         )
     ]
 
+    # start training 
     model.fit(
         dataset['train'],
         epochs=configs['num_epochs'],
-        steps_per_epoch=STEPS_PER_EPOCH,
-        validation_steps=VALIDATION_STEPS,
+        steps_per_epoch=train_steps,
+        validation_steps=val_steps,
         validation_data=dataset['val'],
         callbacks=callbacks,
-        verbose=2
+        verbose=2 # 1 = live progress bar, 2 = one line per epoch
     )
 
-    # results
-    #plot_results()
-
+    # plot results
 
     # cleanup
 

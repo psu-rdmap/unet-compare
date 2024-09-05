@@ -1,9 +1,13 @@
 from glob import glob
-from os import mkdir, listdir
-from os.path import join
+from os import mkdir, listdir, remove
+from os.path import join, split, splitext
 import shutil
 import tensorflow as tf
+import random
+import re
+import cv2
 
+random.seed(229)
 AUTOTUNE = tf.data.AUTOTUNE
 tf.random.set_seed(3051)
 
@@ -25,17 +29,17 @@ def create_dataset(configs):
     ds_path = join(configs['root'], 'dataset')
     train_val_paths = create_dstree(ds_path)
 
-    # split dataset
-    data = configs['data']
+    # if auto_split is true, this function will split the data into train/val sets
+    configs = split_data(configs)
 
     # copy images into dataset directory
-    populate_dstree(configs['root'], data)
+    populate_dstree(configs['root'], configs['data'])
 
     # augment dataset
-    augment_dataset()
+    augment_dataset(configs, train_val_paths['train'])
 
     # create a Tensorflow Dataset object
-    return define_dataset(train_val_paths, data)
+    return define_dataset(train_val_paths, configs['data'])
 
 
 def create_dstree(dest):
@@ -77,7 +81,6 @@ def populate_dstree(root, data_cfgs):
         Root path of the project
     data_cfgs : dict
         Dataset creation data (dataset prefix, filenames, extensions, etc.)
-      
     """
 
     # file sets
@@ -106,49 +109,58 @@ def populate_dstree(root, data_cfgs):
     copy_files(val_annotations, annotation_source, annotation_val_dest)
 
 
-def augment_dataset():
+def augment_dataset(configs, image_train_path):
     """
-    NOT IMPLIMENTED YET
+    Replace each image and annotation with eight geometric augmentations
 
+    Parameters:
+    ---------- 
+    configs : dict
+        Dictionary with relevant data information (file extensions, etc.)
+    image_train_path : str
+        Full path to training images in created dataset directory 
+    """
 
-    # using the root path to a directory containing images (e.g. dataset/images/train/)
-    #     also using the list of images in said directory
-    #     augment and save them as the 'save_format' type (e.g. jpg or png)
-    for i in image_list:
-        # extract file name without extension
-        base = splitext(i)[0]
+    # loop through training images (use glob to get full path to each image) 
+    for img in glob(join(image_train_path, '*')):
+        # replace images in path with annotations and image extension to annotation extension
+        ann = re.sub('images', 'annotations', img)
+        ann = re.sub(configs['data']['image_ext'], configs['data']['annotation_ext'], ann)
 
-        # open image
-        im = join(root, i)
-        img = Image.open(im)
+        # augment image and annotation
+        augment_single_image(img)
+        augment_single_image(ann)
+
+    def augment_single_image(file_full_path):
+        # get file path pieces
+        path, fn_ext = split(file_full_path)
+        fn, ext = splitext(fn_ext)
+
+        # load file
+        file = cv2.imread(file_full_path)
         
-        # perform transformations on image
-        img_1 = img
-        img_2 = img.rotate(90)
-        img_3 = img.rotate(180)
-        img_4 = img.rotate(270)
-        img_5 = img.transpose(Image.FLIP_LEFT_RIGHT)
-        img_6 = img_2.transpose(Image.FLIP_TOP_BOTTOM)
-        img_7 = img.transpose(Image.FLIP_TOP_BOTTOM)
-        img_8 = img_2.transpose(Image.FLIP_TOP_BOTTOM)
+        # perform transformations on file
+        file_1 = file                                              # original
+        file_2 = cv2.rotate(file, cv2.ROTATE_90_CLOCKWISE)         # rot90
+        file_3 = cv2.rotate(file, cv2.ROTATE_180)                  # rot180
+        file_4 = cv2.rotate(file, cv2.ROTATE_90_COUNTERCLOCKWISE)  # rot270
+        file_5 = cv2.flip(file, 1)                                 # xflip
+        file_6 = cv2.flip(file_2, 1)                               # rot90 + xflip
+        file_7 = cv2.flip(file_2, 0)                               # rot90 + yflip
+        file_8 = cv2.flip(file_3, 1)                               # rot90 + xflip
 
         # save augmentations
-        img_1.save(join(root, base + "_1." + save_format))
-        img_2.save(join(root, base + "_2." + save_format))
-        img_3.save(join(root, base + "_3." + save_format))
-        img_4.save(join(root, base + "_4." + save_format))
-        img_5.save(join(root, base + "_5." + save_format))
-        img_6.save(join(root, base + "_6." + save_format))
-        img_7.save(join(root, base + "_7." + save_format))
-        img_8.save(join(root, base + "_8." + save_format))
-
-        # delete image object
-        img.close()
+        cv2.imwrite(join(path, fn + '_1', ext), file_1)
+        cv2.imwrite(join(path, fn + '_2', ext), file_2)
+        cv2.imwrite(join(path, fn + '_3', ext), file_3)
+        cv2.imwrite(join(path, fn + '_4', ext), file_4)
+        cv2.imwrite(join(path, fn + '_5', ext), file_5)
+        cv2.imwrite(join(path, fn + '_6', ext), file_6)
+        cv2.imwrite(join(path, fn + '_7', ext), file_7)
+        cv2.imwrite(join(path, fn + '_8', ext), file_8)
 
         # remove original image and label
-        remove(im)
-    """
-    pass
+        remove(file_full_path)
 
 
 def define_dataset(train_val_paths, data_cfgs):
@@ -164,16 +176,15 @@ def define_dataset(train_val_paths, data_cfgs):
     --------
     dataset : dict
         Dictionary of training and validation instantiated Dataset objects
-    STEPS_PER_EPOCH : int
+    train_steps : int
         Number of steps to take when training for a single pass over all available training data
-    VALIDATION_STEPS : int
+    val_steps : int
         Number of steps to take during evaluation of the validation set after an epoch has completed
-   
     """
     
     # get size of training and validation sets
-    TRAINSET_SIZE = len(listdir(train_val_paths['train_path']))
-    VALSET_SIZE = len(listdir(train_val_paths['val_path']))
+    train_size = len(listdir(train_val_paths['train_path']))
+    val_size = len(listdir(train_val_paths['val_path']))
 
     # initialize Dataset objects with a list of filenames
     train_dataset = tf.data.Dataset.list_files(train_val_paths['train_path'] + '/*')
@@ -200,10 +211,12 @@ def define_dataset(train_val_paths, data_cfgs):
     dataset['val'] = dataset['val'].prefetch(buffer_size=AUTOTUNE)
 
     # determine number of steps to take in an epoch
-    STEPS_PER_EPOCH = TRAINSET_SIZE // data_cfgs['batch_size']
-    VALIDATION_STEPS = VALSET_SIZE // 1
+    train_steps = train_size // data_cfgs['batch_size']
+    val_steps = val_size // 1
 
-    return dataset, STEPS_PER_EPOCH, VALIDATION_STEPS
+    print(type(train_steps), type(val_steps))
+
+    return dataset, train_steps, val_steps
 
 
 def copy_files(files, source, dest):
@@ -218,7 +231,6 @@ def copy_files(files, source, dest):
         Path to current location of files
     dest : str
         Path to where files are to be copied to
-      
     """
 
     for file in files:
@@ -242,7 +254,6 @@ def parse_image(img_path, data_cfgs):
     Returns:
     --------
     Loaded image/annotation pair : dict
-    
     """
     
     # read image and load it into 3 channels (pre-trained backbones require 3)
@@ -266,3 +277,83 @@ def parse_image(img_path, data_cfgs):
 
     # return a dict containing the loaded image/annotation pair
     return {'image': image, 'annotation': annotation}
+
+
+def split_data(configs):
+    """
+    Add training and validation sets to configs if necessary
+
+    Parameters:
+    ---------- 
+    configs : dict
+        Information required to generate training and validation sets
+    
+    Returns:
+    --------
+    configs : dict
+        Updated configs w/ train/val sets
+    """
+    
+    # case 1: auto_split is on and training filenames are provided
+    if (configs['auto_split'] == True) and ('train' in configs['data']):       
+        # randomly select training and validation subsets
+        train_fns, val_fns = auto_split(configs['data']['train'], configs['data']['val_hold_out'])
+
+        # overwrite training filename list and add new val filename list
+        configs['data']['train'] = train_fns
+        configs['data'].update({'val' : val_fns})
+
+    # case 2: auto_split is on and no training filenames are provided
+    elif configs['auto_split'] == True:
+        # get fns from image file source
+        fns_path = join(configs['root'], 'data/', configs['data']['dataset_prefix'], 'images/')
+        fns = listdir(fns_path)
+
+        # randomly select training and validation subsets
+        train_fns, val_fns = auto_split(fns, configs['data']['val_hold_out'])
+
+        # add train and val filename lists
+        configs['data'].update({'train' : train_fns})
+        configs['data'].update({'val' : val_fns})
+
+    # case 3: data is already split and provided by the user
+    else:
+        pass
+
+    return configs
+    
+
+def auto_split(fns, val_hold_out):
+    """
+    Randomly select subsets of the fns list for training and validation
+
+    Parameters:
+    ---------- 
+    fns : list
+        List of filenames to be split
+    val_hold_out : dict
+        Fraction of files to be held out for validation 
+
+    Returns:
+    --------
+    train_fns : list
+        Filenames to be used for training
+    val_fns : list
+        Filenames to be used for validation
+    """
+    
+    # shuffle images to prevent sequence bias
+    random.shuffle(fns)
+
+    # upper/lower bounds
+    train_lower = 0
+    train_upper = int(len(fns)*val_hold_out)
+    
+    val_lower = train_upper
+    val_upper = len(fns)
+
+    # define and return new filenames sets
+    train_fns = fns[train_lower : train_upper]
+    val_fns = fns[val_lower : val_upper]
+
+    return train_fns, val_fns
