@@ -1,18 +1,18 @@
 import models
 import dataloader
+import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 from os.path import join
 from os import mkdir
-import models_test
 
 def default(configs):
     # dataset
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
 
     # model
-    model = models.UNetModel(**configs).decoder
-
+    model = models.Decoder(configs).decoder
+    
     # optimizer and loss
     model.compile(
         optimizer = Adam(learning_rate=configs['learning_rate']),
