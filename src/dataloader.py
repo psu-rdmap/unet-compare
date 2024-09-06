@@ -188,9 +188,9 @@ def define_dataset(train_val_paths, data_cfgs):
     val_size = len(listdir(train_val_paths['val_path']))
 
     # initialize Dataset objects with a list of filenames
-    train_dataset = tf.data.Dataset.list_files(train_val_paths['train_path'] + '/*')
-    val_dataset = tf.data.Dataset.list_files(train_val_paths['val_path'] + '/*')
-    
+    train_dataset = tf.data.Dataset.list_files(train_val_paths['train_path'] + '/*' + data_cfgs['image_ext'])
+    val_dataset = tf.data.Dataset.list_files(train_val_paths['val_path'] + '/*' + data_cfgs['image_ext'])
+
     # replace every image path in the training and validation directories with a loaded image and annotation pair
     train_dataset = train_dataset.map(lambda x: parse_image(x, data_cfgs), num_parallel_calls=AUTOTUNE)
     val_dataset = val_dataset.map(lambda x: parse_image(x, data_cfgs), num_parallel_calls=AUTOTUNE)
@@ -251,13 +251,13 @@ def parse_image(img_path, data_cfgs):
     
     Returns:
     --------
-    Loaded image/annotation pair : dict
+    Loaded image and annotation pair : tf.Tensor, tf.Tensor
     """
     
     # read image and load it into 3 channels (pre-trained backbones require 3)
     image = tf.io.read_file(img_path)
     image = tf.image.decode_png(image, channels=3)
-
+    
     # adjust path to lead to the corresponding annotation and load it
     annotation_path = tf.strings.regex_replace(img_path, "images", "annotations")
     annotation_path = tf.strings.regex_replace(annotation_path, data_cfgs['image_ext'], data_cfgs['annotation_ext'])
@@ -273,8 +273,8 @@ def parse_image(img_path, data_cfgs):
     image = tf.cast(image, tf.float32) / 255.0
     annotation = tf.cast(annotation, tf.float32) / 255.0
 
-    # return a dict containing the loaded image/annotation pair
-    return {'image': image, 'annotation': annotation}
+    # return two Tensor objects with loaded image and annotation data
+    return image, annotation
 
 
 def split_data(configs):

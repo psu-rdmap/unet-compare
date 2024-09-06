@@ -1,5 +1,5 @@
 {
-    "root" : "/home/aidenochoa/unet-compare/",
+    "root" : "/storage/group/xvw5285/default/unet-compare/",
     "results_dir_path" : "results",
     "encoder_name" : "Vanilla",
     "encoder_filters" : [32, 64, 128, 256, 512],

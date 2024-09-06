@@ -3,21 +3,25 @@ import dataloader
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 from os.path import join
-
+from os import mkdir
+import shutil
 
 def default(configs):
     # dataset
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
 
     # model
-    model = models.UNetModel(**configs)
+    model = models.UNetModel(**configs).decoder
 
     # optimizer and loss
-    model.decoder.compile(
+    model.compile(
         optimizer = Adam(learning_rate=configs['learning_rate']),
         loss = 'binary_crossentropy',
         metrics = ['accuracy', 'Precision', 'Recall']
     )
+    
+    # create directory to contain results
+    mkdir(join(configs['root'], configs['results_dir_path']))
 
     # training callbacks
     callbacks = [
@@ -34,8 +38,9 @@ def default(configs):
         )
     ]
     
-    print("made it to fit")
-    """
+    print(dataset['train'])
+    print(dataset['val'])
+
     # start training 
     model.fit(
         dataset['train'],
@@ -44,9 +49,8 @@ def default(configs):
         validation_steps=val_steps,
         validation_data=dataset['val'],
         callbacks=callbacks,
-        verbose=2 # 1 = live progress bar, 2 = one line per epoch
+        verbose=1 # 1 = live progress bar, 2 = one line per epoch
     )
-    """
 
     # plot results
 
