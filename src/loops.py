@@ -4,14 +4,15 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 from os.path import join
 from os import mkdir
-import shutil
+import models_test
 
 def default(configs):
     # dataset
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
 
     # model
-    model = models.UNetModel(**configs).decoder
+    model = models_test.unet(1024, 1e-3)
+    #model = models.UNetModel(**configs).decoder
 
     # optimizer and loss
     model.compile(
