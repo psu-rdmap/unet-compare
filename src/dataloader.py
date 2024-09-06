@@ -139,7 +139,7 @@ def augment_single_image(file_full_path):
 
     # load file
     file = cv2.imread(file_full_path)
-    
+
     # perform transformations on file
     file_1 = file                                              # original
     file_2 = cv2.rotate(file, cv2.ROTATE_90_CLOCKWISE)         # rot90
@@ -148,17 +148,17 @@ def augment_single_image(file_full_path):
     file_5 = cv2.flip(file, 1)                                 # xflip
     file_6 = cv2.flip(file_2, 1)                               # rot90 + xflip
     file_7 = cv2.flip(file_2, 0)                               # rot90 + yflip
-    file_8 = cv2.flip(file_3, 1)                               # rot90 + xflip
+    file_8 = cv2.flip(file_3, 1)                               # rot180 + xflip
 
     # save augmentations
-    cv2.imwrite(join(path, fn + '_1', ext), file_1)
-    cv2.imwrite(join(path, fn + '_2', ext), file_2)
-    cv2.imwrite(join(path, fn + '_3', ext), file_3)
-    cv2.imwrite(join(path, fn + '_4', ext), file_4)
-    cv2.imwrite(join(path, fn + '_5', ext), file_5)
-    cv2.imwrite(join(path, fn + '_6', ext), file_6)
-    cv2.imwrite(join(path, fn + '_7', ext), file_7)
-    cv2.imwrite(join(path, fn + '_8', ext), file_8)
+    cv2.imwrite(join(path, fn + '_1' + ext), file_1)
+    cv2.imwrite(join(path, fn + '_2' + ext), file_2)
+    cv2.imwrite(join(path, fn + '_3' + ext), file_3)
+    cv2.imwrite(join(path, fn + '_4' + ext), file_4)
+    cv2.imwrite(join(path, fn + '_5' + ext), file_5)
+    cv2.imwrite(join(path, fn + '_6' + ext), file_6)
+    cv2.imwrite(join(path, fn + '_7' + ext), file_7)
+    cv2.imwrite(join(path, fn + '_8' + ext), file_8)
 
     # remove original image and label
     remove(file_full_path)
@@ -215,8 +215,6 @@ def define_dataset(train_val_paths, data_cfgs):
     train_steps = train_size // data_cfgs['batch_size']
     val_steps = val_size // 1
 
-    print(type(train_steps), type(val_steps))
-
     return dataset, train_steps, val_steps
 
 
@@ -267,7 +265,7 @@ def parse_image(img_path, data_cfgs):
     annotation = tf.image.decode_png(annotation, channels=1)
 
     # resize image and annotation
-    resize_shape = tf.convert_to_tensor(data_cfgs['input_shape'], dtype=tf.int32)
+    resize_shape = tf.convert_to_tensor(data_cfgs['input_shape'][:2], dtype=tf.int32)
     image = tf.image.resize(image, resize_shape, method=tf.image.ResizeMethod.LANCZOS3, preserve_aspect_ratio=True)
     annotation = tf.image.resize(annotation, resize_shape, method=tf.image.ResizeMethod.LANCZOS3, preserve_aspect_ratio=True)
 

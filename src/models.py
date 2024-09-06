@@ -65,7 +65,7 @@ class Encoder:
         )
     
 
-class Decoder:
+class UNetModel:
     """
     Class that represents full network
 
@@ -89,10 +89,10 @@ class Decoder:
 
         # initialize encoder and decoder
         self.encoder = Encoder(**kwargs)
-        self.model = Decoder.unet(self)
+        self.decoder = UNetModel.unet(self)
 
     def unet(self):
-        encoder_outputs = Decoder.get_encoder_outputs(self)
+        encoder_outputs = UNetModel.get_encoder_outputs(self)
     
         up3_1 = UpsampleUnit(self.decoder_filters[1], self.batchnorm, self.l2_reg, name='upsample_31')(encoder_outputs[4])
         cat3_1 = Concatenate(name='cat_31')([up3_1, encoder_outputs[3]])

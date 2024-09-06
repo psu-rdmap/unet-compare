@@ -1,9 +1,8 @@
 {
     "root" : "/home/aidenochoa/unet-compare/",
     "results_dir_path" : "results",
-    "encoder_name" : "Vanilla",
-    "encoder_filters" : [32, 64, 128, 256, 512],
-    "encoder_stages" : ["conv_block_00", "conv_block_10", "conv_block_20", "conv_block_30", "conv_block_40"],
+    "encoder_name" : "EfficientNetB7",
+    "encoder_stages" : ["stem_activation", "block2g_add", "block3g_add", "block5j_add", "block7d_add"],
     "decoder_filters" : [512, 256, 128, 64, 32],
     "training_loop" : "Default",
     "learning_rate" : 1e-3,
