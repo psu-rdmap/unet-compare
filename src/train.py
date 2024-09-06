@@ -3,13 +3,18 @@ import os
 # suppress warnings when tensorflow is imported
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['PYCARET_CUSTOM_LOGGING_LEVEL'] = 'CRITICAL'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 import argparse
 import json
 import loops
 from utils import check_input
 
-# get input from user
+import tensorflow as tf
+print()
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+
+# user input
 parser = argparse.ArgumentParser(description='U-Net Training')
 
 parser.add_argument('configs', type=str, help='Path to configs for training and dataset parameters')

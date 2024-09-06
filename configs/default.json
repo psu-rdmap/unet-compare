@@ -11,7 +11,7 @@
     "batchnorm" : true, 
     "num_folds" : null,
     "restart_fold" : null,
-    "num_epochs" : 100,
+    "num_epochs" : 10,
     "early_stopping" : true,
     "patience" : 25,
     "data" : {

@@ -11,8 +11,7 @@ def default(configs):
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
 
     # model
-    model = models_test.unet(1024, 1e-3)
-    #model = models.UNetModel(**configs).decoder
+    model = models.UNetModel(**configs).decoder
 
     # optimizer and loss
     model.compile(
@@ -38,9 +37,6 @@ def default(configs):
             save_weights_only=True
         )
     ]
-    
-    print(dataset['train'])
-    print(dataset['val'])
 
     # start training 
     model.fit(
