@@ -5,12 +5,21 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 from os.path import join
 from os import mkdir
+import time
 
 def default(configs):
+    
     # dataset
+    print('\nCreating dataset...')
+    time.sleep(1.5)
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
+    print('\nTraining images: ', configs['train'])
+    print('Validation images:', configs['val'])
+
 
     # model
+    print('\nFetching and compiling model...')
+    time.sleep(0.5)
     model = models.Decoder(configs).decoder
     
     # optimizer and loss
@@ -21,23 +30,24 @@ def default(configs):
     )
     
     # create directory to contain results
-    mkdir(join(configs['root'], configs['results_dir_path']))
-
+    mkdir(join(configs['root'], configs['results']))
+    
     # training callbacks
     callbacks = [
         CSVLogger(
-            join(configs['root'], configs['results_dir_path'], 'metrics.csv'), 
+            join(configs['root'], configs['results'], 'metrics.csv'), 
             separator=',', 
             append=False
         ),
         ModelCheckpoint(
-            join(configs['root'], configs['results_dir_path'], 'best.weights.h5'), 
+            join(configs['root'], configs['results'], 'best.weights.h5'), 
             verbose=1, 
             save_best_only=True, 
             save_weights_only=True
         )
     ]
 
+    print('\nStarting training loop...\n')
     # start training 
     model.fit(
         dataset['train'],
@@ -50,8 +60,10 @@ def default(configs):
     )
 
     # plot results
+    
 
     # cleanup
+
 
 
 def cross_val(configs):

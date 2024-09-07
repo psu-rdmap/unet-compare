@@ -19,5 +19,5 @@ For now, images are associated with their corresponding annotations by giving th
 ## Custom dataset
 A custom dataset can be used by following these steps:
 1. Arrange data into the above directory structure
-2. Create a symlink in the `data/` directory via `ln -s /path/to/custom/dataset/ ~/unet-compare/data/`
+2. Create a symlink in the `data/` directory via `ln -s /path/to/custom/dataset/ unet-compare/data/`
 3. Change the `dataset_prefix` value in the configs file to the dataset name

@@ -33,13 +33,13 @@ def create_dataset(configs):
     configs = split_data(configs)
 
     # copy images into dataset directory
-    populate_dstree(configs['root'], configs['data'])
+    populate_dstree(configs)
 
     # augment dataset
     augment_dataset(configs, train_val_paths['train_path'])
 
     # create a Tensorflow Dataset object
-    return define_dataset(train_val_paths, configs['data'])
+    return define_dataset(train_val_paths, configs)
 
 
 def create_dstree(dest):
@@ -71,7 +71,7 @@ def create_dstree(dest):
     return {"train_path" : image_train_dir, "val_path" : image_val_dir}
 
 
-def populate_dstree(root, data_cfgs):
+def populate_dstree(configs):
     """
     Copy files from data directory to empty dataset tree
 
@@ -84,22 +84,22 @@ def populate_dstree(root, data_cfgs):
     """
 
     # file sets
-    train_images = [image + data_cfgs['image_ext'] for image in data_cfgs['train']]
-    val_images = [image + data_cfgs['image_ext'] for image in data_cfgs['val']]
+    train_images = [image + configs['image_ext'] for image in configs['train']]
+    val_images = [image + configs['image_ext'] for image in configs['val']]
 
-    train_annotations = [annotation + data_cfgs['annotation_ext'] for annotation in data_cfgs['train']]
-    val_annotations = [annotation + data_cfgs['annotation_ext'] for annotation in data_cfgs['val']]
+    train_annotations = [annotation + configs['annotation_ext'] for annotation in configs['train']]
+    val_annotations = [annotation + configs['annotation_ext'] for annotation in configs['val']]
 
     # source directories
-    image_source = join(root, 'data/', data_cfgs['dataset_prefix'], 'images/')
-    annotation_source = join(root, 'data/', data_cfgs['dataset_prefix'], 'annotations/')
+    image_source = join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
+    annotation_source = join(configs['root'], 'data/', configs['dataset_prefix'], 'annotations/')
 
     # dest directories
-    image_train_dest = join(root, 'dataset/images/train')
-    image_val_dest = join(root, 'dataset/images/val')
+    image_train_dest = join(configs['root'], 'dataset/images/train')
+    image_val_dest = join(configs['root'], 'dataset/images/val')
 
-    annotation_train_dest = join(root, 'dataset/annotations/train')
-    annotation_val_dest = join(root, 'dataset/annotations/val')
+    annotation_train_dest = join(configs['root'], 'dataset/annotations/train')
+    annotation_val_dest = join(configs['root'], 'dataset/annotations/val')
 
     # populate directories
     copy_files(train_images, image_source, image_train_dest)
@@ -125,7 +125,7 @@ def augment_dataset(configs, image_train_path):
     for img in glob(join(image_train_path, '*')):
         # replace images in path with annotations and image extension to annotation extension
         ann = re.sub('images', 'annotations', img)
-        ann = re.sub(configs['data']['image_ext'], configs['data']['annotation_ext'], ann)
+        ann = re.sub(configs['image_ext'], configs['annotation_ext'], ann)
 
         # augment image and annotation
         augment_single_image(img)
@@ -164,7 +164,7 @@ def augment_single_image(file_full_path):
     remove(file_full_path)
 
 
-def define_dataset(train_val_paths, data_cfgs):
+def define_dataset(train_val_paths, configs):
     """
     Use created dataset to define Tensorflow Dataset instances for the training and validation sets
 
@@ -188,12 +188,12 @@ def define_dataset(train_val_paths, data_cfgs):
     val_size = len(listdir(train_val_paths['val_path']))
 
     # initialize Dataset objects with a list of filenames
-    train_dataset = tf.data.Dataset.list_files(train_val_paths['train_path'] + '/*' + data_cfgs['image_ext'])
-    val_dataset = tf.data.Dataset.list_files(train_val_paths['val_path'] + '/*' + data_cfgs['image_ext'])
+    train_dataset = tf.data.Dataset.list_files(train_val_paths['train_path'] + '/*' + configs['image_ext'])
+    val_dataset = tf.data.Dataset.list_files(train_val_paths['val_path'] + '/*' + configs['image_ext'])
 
     # replace every image path in the training and validation directories with a loaded image and annotation pair
-    train_dataset = train_dataset.map(lambda x: parse_image(x, data_cfgs), num_parallel_calls=AUTOTUNE)
-    val_dataset = val_dataset.map(lambda x: parse_image(x, data_cfgs), num_parallel_calls=AUTOTUNE)
+    train_dataset = train_dataset.map(lambda x: parse_image(x, configs), num_parallel_calls=AUTOTUNE)
+    val_dataset = val_dataset.map(lambda x: parse_image(x, configs), num_parallel_calls=AUTOTUNE)
 
     BUFFER_SIZE = 48
 
@@ -203,7 +203,7 @@ def define_dataset(train_val_paths, data_cfgs):
     # shuffle the training dataset and batch it
     dataset['train'] = dataset['train'].shuffle(buffer_size=BUFFER_SIZE)
     dataset['train'] = dataset['train'].repeat()
-    dataset['train'] = dataset['train'].batch(data_cfgs['batch_size'])
+    dataset['train'] = dataset['train'].batch(configs['batch_size'])
     dataset['train'] = dataset['train'].prefetch(buffer_size=AUTOTUNE)
 
     # batch the validation dataset
@@ -212,7 +212,7 @@ def define_dataset(train_val_paths, data_cfgs):
     dataset['val'] = dataset['val'].prefetch(buffer_size=AUTOTUNE)
 
     # determine number of steps to take in an epoch
-    train_steps = train_size // data_cfgs['batch_size']
+    train_steps = train_size // configs['batch_size']
     val_steps = val_size // 1
 
     return dataset, train_steps, val_steps
@@ -238,7 +238,7 @@ def copy_files(files, source, dest):
 
 
 @tf.function
-def parse_image(img_path, data_cfgs):
+def parse_image(img_path, configs):
     """
     Load an image and its annotation then resize it and normalize it
 
@@ -260,12 +260,12 @@ def parse_image(img_path, data_cfgs):
     
     # adjust path to lead to the corresponding annotation and load it
     annotation_path = tf.strings.regex_replace(img_path, "images", "annotations")
-    annotation_path = tf.strings.regex_replace(annotation_path, data_cfgs['image_ext'], data_cfgs['annotation_ext'])
+    annotation_path = tf.strings.regex_replace(annotation_path, configs['image_ext'], configs['annotation_ext'])
     annotation = tf.io.read_file(annotation_path)
     annotation = tf.image.decode_png(annotation, channels=1)
 
     # resize image and annotation
-    resize_shape = tf.convert_to_tensor(data_cfgs['input_shape'][:2], dtype=tf.int32)
+    resize_shape = tf.convert_to_tensor(configs['input_shape'][:2], dtype=tf.int32)
     image = tf.image.resize(image, resize_shape, method=tf.image.ResizeMethod.LANCZOS3, preserve_aspect_ratio=True)
     annotation = tf.image.resize(annotation, resize_shape, method=tf.image.ResizeMethod.LANCZOS3, preserve_aspect_ratio=True)
 
@@ -293,26 +293,26 @@ def split_data(configs):
     """
     
     # case 1: auto_split is on and training filenames are provided
-    if (configs['data']['auto_split'] == True) and ('train' in configs['data']):       
+    if (configs['auto_split'] == True) and ('train' in configs):       
         # randomly select training and validation subsets
-        train_fns, val_fns = auto_split(configs['data']['train'], configs['data']['val_hold_out'])
+        train_fns, val_fns = auto_split(configs['train'], configs['val_hold_out'])
 
         # overwrite training filename list and add new val filename list
-        configs['data']['train'] = train_fns
-        configs['data'].update({'val' : val_fns})
+        configs['train'] = train_fns
+        configs.update({'val' : val_fns})
 
     # case 2: auto_split is on and no training filenames are provided
-    elif configs['data']['auto_split'] == True:
+    elif configs['auto_split'] == True:
         # get fns from image file source
-        fns_path = join(configs['root'], 'data/', configs['data']['dataset_prefix'], 'images/')
+        fns_path = join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
         fns = listdir(fns_path)
 
         # randomly select training and validation subsets
-        train_fns, val_fns = auto_split(fns, configs['data']['val_hold_out'])
+        train_fns, val_fns = auto_split(fns, configs['val_hold_out'])
 
         # add train and val filename lists
-        configs['data'].update({'train' : train_fns})
-        configs['data'].update({'val' : val_fns})
+        configs.update({'train' : train_fns})
+        configs.update({'val' : val_fns})
 
     # case 3: data is already split and provided by the user
     else:
@@ -345,7 +345,7 @@ def auto_split(fns, val_hold_out):
 
     # upper/lower bounds
     train_lower = 0
-    train_upper = int(len(fns)*val_hold_out)
+    train_upper = int(len(fns)*(1-val_hold_out))
     
     val_lower = train_upper
     val_upper = len(fns)
