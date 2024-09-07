@@ -1,6 +1,6 @@
 from glob import glob
 from os import mkdir, listdir, remove
-from os.path import join, split, splitext
+from os.path import join, split, splitext, isdir
 import shutil
 import tensorflow as tf
 import random
@@ -27,6 +27,8 @@ def create_dataset(configs):
     
     # create directory structure
     ds_path = join(configs['root'], 'dataset')
+    if isdir(ds_path):
+        shutil.rmtree(ds_path)
     train_val_paths = create_dstree(ds_path)
 
     # if auto_split is true, this function will split the data into train/val sets

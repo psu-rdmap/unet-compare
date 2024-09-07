@@ -1,8 +1,15 @@
 import os
 import datetime
+import tensorflow as tf
+from keras.preprocessing.image import save_img
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 class InputContradiction(Exception):
     pass
+
 
 def check_input(configs : dict) -> dict:
     """
@@ -210,3 +217,104 @@ def check_input(configs : dict) -> dict:
 
 
     return configs
+
+
+def inference(configs, model):
+    # base image source
+    img_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
+    
+    # train and val save destinations
+    train_save_path = os.path.join(configs['root'], configs['results'], 'train_preds/')
+    val_save_path = os.path.join(configs['root'], configs['results'], 'val_preds/')
+    os.mkdir(train_save_path)
+    os.mkdir(val_save_path)
+
+    # inference train images
+    for fn in configs['train']:
+        img_full_path = os.path.join(img_path, fn + configs['image_ext'])
+        inference_single_image(img_full_path, model, train_save_path)
+
+    # inference val images
+    for fn in configs['val']:
+        img_full_path = os.path.join(img_path, fn + configs['image_ext'])
+        inference_single_image(img_full_path, model, val_save_path)
+
+    # load image, inference, and save predictions
+    def inference_single_image(img_full_path, model, img_save_path):
+        # get file path pieces
+        _, fn_ext = os.path.split(img_full_path)
+        fn, _ = os.path.splitext(fn_ext)
+        
+        # load image
+        img = tf.io.read_file(img_full_path)
+        img = tf.image.decode_png(img, channels=3)
+        img = tf.cast(img, tf.float32) / 255.0
+        img = tf.expand_dims(img, axis=0)
+        
+        # get prediction
+        pred = model.predict(img, verbose = 2)
+
+        # save pred
+        pred_save_path = os.path.join(img_save_path, fn + '.png')
+        save_img(pred_save_path, tf.squeeze(pred, axis=0))
+
+
+def plot_results(configs):
+    # paths
+    results_path = os.path.join(configs['root'], configs['results'])
+    metrics_path = os.path.join(results_path, 'metrics.csv')
+    plot_save_path = os.path.join(results_path, 'metrics.png')
+
+    # read metrics into dataframe
+    metrics = pd.read_csv(metrics_path)
+
+    # get num epochs, and redefine it offset by 1
+    num_epochs = metrics['epoch'].count()
+    metrics['epoch'] = metrics['epoch'] + 1
+
+    # determine lowest val loss index (where val loss is closest to min(val_loss))
+    best_idx = np.where(np.isclose(metrics['val_loss'], min(metrics['val_loss'])))[0]
+
+    # add f1 columns to the dataframe
+    metrics['f1'] = add_f1(metrics)
+    metrics['val_f1'] = add_f1(metrics, val = True)
+
+    # generate subplots
+    fig, axs = plt.subplots(4, 1, figsize=(12,20))
+
+    titles = ['BCE Loss', 'Precision', 'Recall', 'F1-Score']
+    y_axes = ['loss', 'Precision', 'Recall', 'f1']
+
+    for i in range(len(axs)):
+        y1 = y_axes[i]
+        y2 = 'val_' + y1
+
+        # plot metric curve
+        axs[i].plot(metrics['epoch'], metrics[y1], '-o',  label='Train')
+        axs[i].plot(metrics['epoch'], metrics[y2], '-o', label='Val')
+        
+        # add point corresponding to lowest val loss on each curve
+        axs[i].plot(best_idx + 1, metrics[y1].iloc[best_idx], 'D', color='purple')
+        axs[i].plot(best_idx + 1, metrics[y2].iloc[best_idx], 'D', color='purple', label='Min Val Loss')
+        
+        # misc settings
+        axs[i].set_xlabel('Epoch')
+        axs[i].set_ylabel(titles[i])
+        axs[i].set_xlim([1,num_epochs])
+        if i == 0:
+            axs[i].set_yscale('log')
+        else:
+            axs[i].set_yticks(ticks=np.arange(0,1.1,0.1))
+        axs[i].grid(visible=True)
+        axs[i].legend()     
+
+    fig.savefig(plot_save_path, bbox_inches="tight")
+
+    def add_f1(metrics, val = False):
+        if val == True:
+            p = 'val_Precision'
+            r = 'val_Recall'
+        else:
+            p = 'Precision'
+            r = 'Recall'
+        return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))

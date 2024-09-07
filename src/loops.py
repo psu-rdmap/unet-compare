@@ -6,6 +6,8 @@ from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 from os.path import join
 from os import mkdir
 import time
+from utils import inference, plot_results
+import shutil
 
 def default(configs):
     
@@ -59,11 +61,17 @@ def default(configs):
         verbose=1 # 1 = live progress bar, 2 = one line per epoch
     )
 
+    print('\n Inferencing image sets...\n')
+    # inferences train/val sets
+    inference(configs, model)
+
+    print('\n Plotting metrics...\n')
     # plot results
-    
+    plot_results(configs)
 
+    print('\n Cleaning up...\n')
     # cleanup
-
+    shutil.rmtree(join(configs['root'], configs['dataset']))
 
 
 def cross_val(configs):
