@@ -61,18 +61,17 @@ def default(configs):
         verbose=1 # 1 = live progress bar, 2 = one line per epoch
     )
 
-    print('\n Inferencing image sets...\n')
     # inferences train/val sets
     inference(configs, model)
 
-    print('\n Plotting metrics...\n')
+    print('\nPlotting metrics...\n')
     # plot results
     plot_results(configs)
 
-    print('\n Cleaning up...\n')
+    print('\nCleaning up...\n')
     # cleanup
-    shutil.rmtree(join(configs['root'], configs['dataset']))
-
+    shutil.rmtree(join(configs['root'], 'dataset'))
+    print('Done')
 
 def cross_val(configs):
     raise NotImplementedError

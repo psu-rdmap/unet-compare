@@ -229,34 +229,39 @@ def inference(configs, model):
     os.mkdir(train_save_path)
     os.mkdir(val_save_path)
 
+    print('\nInferencing training images\n')
+
     # inference train images
     for fn in configs['train']:
         img_full_path = os.path.join(img_path, fn + configs['image_ext'])
         inference_single_image(img_full_path, model, train_save_path)
+    
+    print('\nInferencing validation images\n')
 
     # inference val images
     for fn in configs['val']:
         img_full_path = os.path.join(img_path, fn + configs['image_ext'])
         inference_single_image(img_full_path, model, val_save_path)
 
-    # load image, inference, and save predictions
-    def inference_single_image(img_full_path, model, img_save_path):
-        # get file path pieces
-        _, fn_ext = os.path.split(img_full_path)
-        fn, _ = os.path.splitext(fn_ext)
-        
-        # load image
-        img = tf.io.read_file(img_full_path)
-        img = tf.image.decode_png(img, channels=3)
-        img = tf.cast(img, tf.float32) / 255.0
-        img = tf.expand_dims(img, axis=0)
-        
-        # get prediction
-        pred = model.predict(img, verbose = 2)
 
-        # save pred
-        pred_save_path = os.path.join(img_save_path, fn + '.png')
-        save_img(pred_save_path, tf.squeeze(pred, axis=0))
+# load image, inference, and save predictions
+def inference_single_image(img_full_path, model, img_save_path):
+    # get file path pieces
+    _, fn_ext = os.path.split(img_full_path)
+    fn, _ = os.path.splitext(fn_ext)
+    
+    # load image
+    img = tf.io.read_file(img_full_path)
+    img = tf.image.decode_png(img, channels=3)
+    img = tf.cast(img, tf.float32) / 255.0
+    img = tf.expand_dims(img, axis=0)
+    
+    # get prediction
+    pred = model.predict(img, verbose = 2)
+
+    # save pred
+    pred_save_path = os.path.join(img_save_path, fn + '.png')
+    save_img(pred_save_path, tf.squeeze(pred, axis=0))
 
 
 def plot_results(configs):
@@ -310,11 +315,11 @@ def plot_results(configs):
 
     fig.savefig(plot_save_path, bbox_inches="tight")
 
-    def add_f1(metrics, val = False):
-        if val == True:
-            p = 'val_Precision'
-            r = 'val_Recall'
-        else:
-            p = 'Precision'
-            r = 'Recall'
-        return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))
+def add_f1(metrics, val = False):
+    if val == True:
+        p = 'val_Precision'
+        r = 'val_Recall'
+    else:
+        p = 'Precision'
+        r = 'Recall'
+    return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))
