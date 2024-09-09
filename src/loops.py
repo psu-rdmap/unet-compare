@@ -15,7 +15,7 @@ import gc
 def single(configs):
     # dataset
     print('\nCreating dataset...')
-    time.sleep(1.5)
+    time.sleep(2)
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
     print('\nTraining images: ', configs['train'])
     print('Validation images:', configs['val'])
@@ -59,48 +59,53 @@ def single(configs):
         verbose=1 # 1 = live progress bar, 2 = one line per epoch
     )
 
-    print('\n Inferencing image sets...\n')
+    print('\nInferencing image sets...\n')
     # inferences train/val sets
     inference(configs, model)
 
-    print('\n Plotting metrics...\n')
+    print('\nPlotting metrics...')
     # plot results
     plot_results(configs)
 
-    print('\n Cleaning up...\n')
+    print('\nCleaning up...')
     # cleanup
-    shutil.rmtree(join(configs['root'], configs['dataset']))
+    shutil.rmtree(join(configs['root'], 'dataset'))
     K.clear_session()
     gc.collect()
 
+    if configs['training_loop'] == 'Single':
+        print('\nDone.')
 
-def cross_val(configs):
+
+def cross_val(configs):    
     # generate split datasets for each fold
     train_sets, val_sets = create_folds(configs['train'], configs['num_folds'])
     
+    # save original results directory
+    top_level_results = configs['results']
+    
+    # loop through folds
     for fold in range(configs['num_folds']):
         # add train/val sets
         configs.update({'train' : train_sets[fold]})
         configs.update({'val' : val_sets[fold]})
 
         # create results directory for this fold
-        results_dir = 'fold_' + str(fold)
+        results_dir = 'fold_' + str(fold+1)
         results_dir = join(configs['results'], results_dir)
-        mkdir(results_dir)
-
-        print('-'*20 + ' Fold {} '.format(fold) + '-'*20)
-        print('\nTraining images:', train_sets[fold])
-        print('Validation images:', val_sets[fold])
+        configs.update({'results' : results_dir})
+        mkdir(join(configs['root'], results_dir))
+        
+        print()
+        print('-'*20 + ' Fold {} '.format(fold+1) + '-'*20)
 
         # start single loop training
         single(configs)
 
-        print('-'*(40 + len(' Fold {} '.format(fold))))
-        print()
-        
+        # redefine fold directory
+        configs.update({'results' : top_level_results})
 
-
-
+    print('\nDone.')
 
 
 

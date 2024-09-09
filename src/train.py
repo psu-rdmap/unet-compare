@@ -24,7 +24,7 @@ args = parser.parse_args()
 with open(args.configs, 'r') as f:
     configs = json.load(f)
 print('\nChecking user input...')
-time.sleep(1.5)
+time.sleep(2)
 print()
 check_input(configs)
 
@@ -40,6 +40,7 @@ def main():
 
     # run the chosen training loop (always default to Single loop)
     if configs['training_loop'] == 'CrossVal':
+        print('\n---- Warning: cross validation selected...program execution time may be significant ----')
         loops.cross_val(configs)
     else:
         loops.single(configs)

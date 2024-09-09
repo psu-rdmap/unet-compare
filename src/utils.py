@@ -130,8 +130,12 @@ def check_input(configs):
 
     # only handle early stopping if it is provided
     if configs['training_loop'] == 'CrossVal':
-        if ('early_stopping' in configs) or (configs['early_stopping'] == True): 
-            raise InputContradiction('Cross validation loop was selected, but early stopping was true. Early stopping must be false, or not provided. This ensures fold-wise similarity')
+        if 'early_stopping' in configs:
+            assert type(configs['early_stopping']) == bool
+            if configs['early_stopping'] == True: 
+                raise InputContradiction('Cross validation loop was selected, but early stopping was true. Early stopping must be false, or not provided. This ensures fold-wise similarity')
+        else:
+            pass
     elif 'early_stopping' in configs:
         assert type(configs['early_stopping']) == bool, 'Early stopping must be true or false'
         if configs['early_stopping']:
@@ -205,7 +209,7 @@ def check_input(configs):
 
     # handle val hold out percentage
     if configs['training_loop'] == 'CrossVal':
-        configs.update('auto_split') == False
+        configs.update({'auto_split' : False})
     else:
         if configs['auto_split'] == True:
             if 'val_hold_out' not in configs:
@@ -262,24 +266,24 @@ def inference(configs, model):
         img_full_path = os.path.join(img_path, fn + configs['image_ext'])
         inference_single_image(img_full_path, model, val_save_path)
 
-    # load image, inference, and save predictions
-    def inference_single_image(img_full_path, model, img_save_path):
-        # get file path pieces
-        _, fn_ext = os.path.split(img_full_path)
-        fn, _ = os.path.splitext(fn_ext)
-        
-        # load image
-        img = tf.io.read_file(img_full_path)
-        img = tf.image.decode_png(img, channels=3)
-        img = tf.cast(img, tf.float32) / 255.0
-        img = tf.expand_dims(img, axis=0)
-        
-        # get prediction
-        pred = model.predict(img, verbose = 2)
+# load image, inference, and save predictions
+def inference_single_image(img_full_path, model, img_save_path):
+    # get file path pieces
+    _, fn_ext = os.path.split(img_full_path)
+    fn, _ = os.path.splitext(fn_ext)
+    
+    # load image
+    img = tf.io.read_file(img_full_path)
+    img = tf.image.decode_png(img, channels=3)
+    img = tf.cast(img, tf.float32) / 255.0
+    img = tf.expand_dims(img, axis=0)
+    
+    # get prediction
+    pred = model.predict(img, verbose = 2)
 
-        # save pred
-        pred_save_path = os.path.join(img_save_path, fn + '.png')
-        save_img(pred_save_path, tf.squeeze(pred, axis=0))
+    # save pred
+    pred_save_path = os.path.join(img_save_path, fn + '.png')
+    save_img(pred_save_path, tf.squeeze(pred, axis=0))
 
 
 def plot_results(configs):
@@ -333,15 +337,15 @@ def plot_results(configs):
 
     fig.savefig(plot_save_path, bbox_inches="tight")
 
-    def add_f1(metrics, val = False):
-        if val == True:
-            p = 'val_Precision'
-            r = 'val_Recall'
-        else:
-            p = 'Precision'
-            r = 'Recall'
-        return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))
-    
+def add_f1(metrics, val = False):
+    if val == True:
+        p = 'val_Precision'
+        r = 'val_Recall'
+    else:
+        p = 'Precision'
+        r = 'Recall'
+    return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))
+
 
 def create_folds(img_list, num_folds):
     # number of validation images to be held out in each fold
