@@ -3,21 +3,22 @@ import dataloader
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
-from os.path import join
 from os import mkdir
+from os.path import join
 import time
-from utils import inference, plot_results
+from utils import inference, plot_results, create_folds
 import shutil
+from keras import backend as K
+import gc
 
-def default(configs):
-    
+
+def single(configs):
     # dataset
     print('\nCreating dataset...')
     time.sleep(1.5)
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
     print('\nTraining images: ', configs['train'])
     print('Validation images:', configs['val'])
-
 
     # model
     print('\nFetching and compiling model...')
@@ -30,9 +31,6 @@ def default(configs):
         loss = 'binary_crossentropy',
         metrics = ['accuracy', 'Precision', 'Recall']
     )
-    
-    # create directory to contain results
-    mkdir(join(configs['root'], configs['results']))
     
     # training callbacks
     callbacks = [
@@ -61,17 +59,52 @@ def default(configs):
         verbose=1 # 1 = live progress bar, 2 = one line per epoch
     )
 
+    print('\n Inferencing image sets...\n')
     # inferences train/val sets
     inference(configs, model)
 
-    print('\nPlotting metrics...\n')
+    print('\n Plotting metrics...\n')
     # plot results
     plot_results(configs)
 
-    print('\nCleaning up...\n')
+    print('\n Cleaning up...\n')
     # cleanup
-    shutil.rmtree(join(configs['root'], 'dataset'))
-    print('Done')
+    shutil.rmtree(join(configs['root'], configs['dataset']))
+    K.clear_session()
+    gc.collect()
+
 
 def cross_val(configs):
-    raise NotImplementedError
+    # generate split datasets for each fold
+    train_sets, val_sets = create_folds(configs['train'], configs['num_folds'])
+    
+    for fold in range(configs['num_folds']):
+        # add train/val sets
+        configs.update({'train' : train_sets[fold]})
+        configs.update({'val' : val_sets[fold]})
+
+        # create results directory for this fold
+        results_dir = 'fold_' + str(fold)
+        results_dir = join(configs['results'], results_dir)
+        mkdir(results_dir)
+
+        print('-'*20 + ' Fold {} '.format(fold) + '-'*20)
+        print('\nTraining images:', train_sets[fold])
+        print('Validation images:', val_sets[fold])
+
+        # start single loop training
+        single(configs)
+
+        print('-'*(40 + len(' Fold {} '.format(fold))))
+        print()
+        
+
+
+
+
+
+
+
+    
+    
+    

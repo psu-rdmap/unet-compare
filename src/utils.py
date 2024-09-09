@@ -5,13 +5,14 @@ from keras.preprocessing.image import save_img
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 
 class InputContradiction(Exception):
     pass
 
 
-def check_input(configs : dict) -> dict:
+def check_input(configs):
     """
     Checks input configs for errors
 
@@ -70,17 +71,6 @@ def check_input(configs : dict) -> dict:
     else:
         assert type(configs['root']) == str, 'Root directory must be a string'
         assert os.path.isdir(configs['root']), 'Root directory does not exist'
-
-    
-    # auto-define results directory if not provided or check the one thats been provided
-    if 'results' in configs:
-        print('---- Results directory provided. Overriding automatic definition ----\n')
-        assert type(configs['results']) == str, 'Results directory must be a string'
-        assert not os.path.isdir(configs['results']), 'Results directory already exists'
-    else:
-        now = datetime.datetime.now()
-        results_dir = 'results_' + configs['dataset_prefix'] + '_' + configs['encoder_name'] + '_' + configs['decoder_name'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
-        configs.update({'results' : results_dir})
     
 
     # handle encoder stages
@@ -139,7 +129,10 @@ def check_input(configs : dict) -> dict:
 
 
     # only handle early stopping if it is provided
-    if 'early_stopping' in configs:
+    if configs['training_loop'] == 'CrossVal':
+        if ('early_stopping' in configs) or (configs['early_stopping'] == True): 
+            raise InputContradiction('Cross validation loop was selected, but early stopping was true. Early stopping must be false, or not provided. This ensures fold-wise similarity')
+    elif 'early_stopping' in configs:
         assert type(configs['early_stopping']) == bool, 'Early stopping must be true or false'
         if configs['early_stopping']:
             assert 'patience' in configs, 'Early stopping is true, but patience is not provided'
@@ -190,31 +183,61 @@ def check_input(configs : dict) -> dict:
         assert all([type(fn) == str for fn in configs['train']]), 'All elements of the training filename set must be strings'
 
 
-    # handle val 
-    if 'val' not in configs:
-        # check auto split
-        if 'auto_split' not in configs:
-            print('---- No validation set provided and neither was auto split. Defaulting latter to true ----\n')
-            configs.update({'auto_split' : True})
-        else:
-            assert configs['auto_split'] == True, 'Auto split must be true if no validation set is provided'
-    elif type(configs['val']) == list:
-        assert (configs['auto_split'] == False) or ('auto_split' not in configs), 'Auto split must be false or not provided if no validation set is provided'
-        assert len(configs['val']) > 0, 'At least one validation image filename must be provided if a validation set is provided'
-        assert all([type(fn) == str for fn in configs['val']]), 'All elements of the validation filename set must be strings'
+    # handle val
+    if configs['training_loop'] == 'CrossVal':
+        if 'val' in configs:
+            raise InputContradiction('Cross validation loop was selected but a val set was provided. Specify all images in train instead')
     else:
-        raise KeyError('Validation set must be an array or not provided')
+        if 'val' not in configs:
+            # check auto split
+            if 'auto_split' not in configs:
+                print('---- No validation set provided and neither was auto split. Defaulting latter to true ----\n')
+                configs.update({'auto_split' : True})
+            else:
+                assert configs['auto_split'] == True, 'Auto split must be true if no validation set is provided'
+        elif type(configs['val']) == list:
+            assert (configs['auto_split'] == False) or ('auto_split' not in configs), 'Auto split must be false or not provided if no validation set is provided'
+            assert len(configs['val']) > 0, 'At least one validation image filename must be provided if a validation set is provided'
+            assert all([type(fn) == str for fn in configs['val']]), 'All elements of the validation filename set must be strings'
+        else:
+            raise KeyError('Validation set must be an array or not provided')
     
 
     # handle val hold out percentage
-    if configs['auto_split'] == True:
-        if 'val_hold_out' not in configs:
-            raise KeyError('No validation hold out percentage provided, but auto split was true')
-        elif 'val_hold_out' in configs:
-            assert type(configs['val_hold_out'] == float), 'Validation hold out must be a decimal between 0 and 1'
-            assert configs['val_hold_out'] > 0, 'Validation hold out must be a decimal between 0 and 1'
-            assert configs['val_hold_out'] < 1, 'Validation hold out must be a decimal between 0 and 1'
+    if configs['training_loop'] == 'CrossVal':
+        configs.update('auto_split') == False
+    else:
+        if configs['auto_split'] == True:
+            if 'val_hold_out' not in configs:
+                raise KeyError('No validation hold out percentage provided, but auto split was true')
+            elif 'val_hold_out' in configs:
+                assert type(configs['val_hold_out'] == float), 'Validation hold out must be a decimal between 0 and 1'
+                assert configs['val_hold_out'] > 0, 'Validation hold out must be a decimal between 0 and 1'
+                assert configs['val_hold_out'] < 1, 'Validation hold out must be a decimal between 0 and 1'
 
+        
+    # check num_folds if using cross val loop
+    if configs['training_loop'] == 'CrossVal':
+        assert 'num_folds' in configs, 'If using cross validation, you must provide the number of folds'
+        assert type(configs['num_folds']) == int, 'Number of folds must be a positive integer greater than 1'
+        assert configs['num_folds'] > 1, 'Number of folds must be a positive integer greater than 1'
+        assert len(configs['train']) >= configs['num_folds'], 'There must be at least as many images as folds'
+
+
+    # auto-define results directory if not provided or check the one thats been provided
+    if 'results' in configs:
+        print('---- Results directory provided. Overriding automatic definition. Note: please use the absolute path ----\n')
+        assert type(configs['results']) == str, 'Results directory must be a string'
+        assert not os.path.isdir(configs['results']), 'Results directory already exists'
+    else:
+        now = datetime.datetime.now()
+        if configs['training_loop'] == 'CrossVal':
+            cv_string = 'cv_'
+        else: 
+            cv_string = ''
+        results_dir = 'results_' + configs['dataset_prefix'] + '_' + cv_string + configs['encoder_name'] + '_' + configs['decoder_name'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+        results_dir = os.path.join(configs['root'], results_dir)
+        configs.update({'results' : results_dir})
 
     return configs
 
@@ -229,39 +252,34 @@ def inference(configs, model):
     os.mkdir(train_save_path)
     os.mkdir(val_save_path)
 
-    print('\nInferencing training images\n')
-
     # inference train images
     for fn in configs['train']:
         img_full_path = os.path.join(img_path, fn + configs['image_ext'])
         inference_single_image(img_full_path, model, train_save_path)
-    
-    print('\nInferencing validation images\n')
 
     # inference val images
     for fn in configs['val']:
         img_full_path = os.path.join(img_path, fn + configs['image_ext'])
         inference_single_image(img_full_path, model, val_save_path)
 
+    # load image, inference, and save predictions
+    def inference_single_image(img_full_path, model, img_save_path):
+        # get file path pieces
+        _, fn_ext = os.path.split(img_full_path)
+        fn, _ = os.path.splitext(fn_ext)
+        
+        # load image
+        img = tf.io.read_file(img_full_path)
+        img = tf.image.decode_png(img, channels=3)
+        img = tf.cast(img, tf.float32) / 255.0
+        img = tf.expand_dims(img, axis=0)
+        
+        # get prediction
+        pred = model.predict(img, verbose = 2)
 
-# load image, inference, and save predictions
-def inference_single_image(img_full_path, model, img_save_path):
-    # get file path pieces
-    _, fn_ext = os.path.split(img_full_path)
-    fn, _ = os.path.splitext(fn_ext)
-    
-    # load image
-    img = tf.io.read_file(img_full_path)
-    img = tf.image.decode_png(img, channels=3)
-    img = tf.cast(img, tf.float32) / 255.0
-    img = tf.expand_dims(img, axis=0)
-    
-    # get prediction
-    pred = model.predict(img, verbose = 2)
-
-    # save pred
-    pred_save_path = os.path.join(img_save_path, fn + '.png')
-    save_img(pred_save_path, tf.squeeze(pred, axis=0))
+        # save pred
+        pred_save_path = os.path.join(img_save_path, fn + '.png')
+        save_img(pred_save_path, tf.squeeze(pred, axis=0))
 
 
 def plot_results(configs):
@@ -315,11 +333,49 @@ def plot_results(configs):
 
     fig.savefig(plot_save_path, bbox_inches="tight")
 
-def add_f1(metrics, val = False):
-    if val == True:
-        p = 'val_Precision'
-        r = 'val_Recall'
-    else:
-        p = 'Precision'
-        r = 'Recall'
-    return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))
+    def add_f1(metrics, val = False):
+        if val == True:
+            p = 'val_Precision'
+            r = 'val_Recall'
+        else:
+            p = 'Precision'
+            r = 'Recall'
+        return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))
+    
+
+def create_folds(img_list, num_folds):
+    # number of validation images to be held out in each fold
+    num_val = np.zeros(num_folds)
+
+    # randomly shuffle the image list given a numpy seed to prevent sequence bias
+    np.random.seed(203)
+    img_list = np.random.permutation(img_list)
+
+    # determine number of hold out images in each fold
+    for i in range(num_folds):
+        # start with integer quotient
+        num_val[i] = math.floor(len(img_list) / num_folds)
+        # distribute the remainder evenly among the first folds   
+        if i < (len(img_list) % num_folds):
+            num_val[i] += 1
+    
+    # convert number of hold out images to indicies
+    running_sum = np.cumsum(num_val)
+    running_sum = np.insert(running_sum, 0, 0)
+    lower_idxs = running_sum[:-1].astype(int)
+    upper_idxs = running_sum[1:].astype(int)
+
+    # save train/val sets as elements of a list
+    train_sets, val_sets = [0]*num_folds, [0]*num_folds
+    for i in range(num_folds):
+        # bounds
+        low = lower_idxs[i]
+        up = upper_idxs[i]
+
+        # fold val set
+        val_sets[i] = img_list[low:up]
+
+        # fold train set is the complement
+        train_sets[i] = np.delete(img_list, np.arange(low, up)).tolist()
+
+    return(train_sets, val_sets)
