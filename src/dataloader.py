@@ -308,6 +308,8 @@ def split_data(configs):
         # get fns from image file source
         fns_path = join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
         fns = listdir(fns_path)
+        
+        fns = [splitext(split(fn)[1])[0] for fn in fns]
 
         # randomly select training and validation subsets
         train_fns, val_fns = auto_split(fns, configs['val_hold_out'])

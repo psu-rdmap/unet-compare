@@ -2,7 +2,7 @@ import models
 import dataloader
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
 from os import mkdir
 from os.path import join
 import time
@@ -46,6 +46,8 @@ def single(configs):
             save_weights_only=True
         )
     ]
+    if configs['early_stopping'] == True:
+        callbacks.append(EarlyStopping(patience = configs['patience']))
 
     print('\nStarting training loop...\n')
     # start training 
@@ -56,7 +58,7 @@ def single(configs):
         validation_steps=val_steps,
         validation_data=dataset['val'],
         callbacks=callbacks,
-        verbose=1 # 1 = live progress bar, 2 = one line per epoch
+        verbose=2 # 1 = live progress bar, 2 = one line per epoch
     )
 
     print('\nInferencing image sets...\n')

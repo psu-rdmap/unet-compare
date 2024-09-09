@@ -36,8 +36,8 @@ def main():
     print('-'*52)
 
     # create top-level results directory
-    mkdir(configs['results'])
-
+    mkdir(join(configs['root'], configs['results']))
+    
     # run the chosen training loop (always default to Single loop)
     if configs['training_loop'] == 'CrossVal':
         print('\n---- Warning: cross validation selected...program execution time may be significant ----')
