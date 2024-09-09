@@ -1,5 +1,6 @@
 {
     "root" : "/home/aidenochoa/unet-compare/",
+    "results" : "results",
     "encoder_name" : "Vanilla",
     "encoder_filters" : [32, 64, 128, 256, 512],
     "encoder_stages" : ["conv_block_00", "conv_block_10", "conv_block_20", "conv_block_30", "conv_block_40"],

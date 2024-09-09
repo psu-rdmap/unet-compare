@@ -9,8 +9,6 @@ import loops
 from utils import check_input
 import tensorflow as tf
 import time
-from os import mkdir
-from os.path import join
 
 # show if the gpu is available
 print("\nNum GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
@@ -35,14 +33,13 @@ def main():
         print(key + ':', val)
     print('-'*52)
 
-    # create top-level results directory
-    mkdir(configs['results'])
-
-    # run the chosen training loop (always default to Single loop)
-    if configs['training_loop'] == 'CrossVal':
+    # run the chosen training loop
+    if configs['training_loop'] == 'Single':
+        loops.default(configs)
+    elif configs['training_loop'] == 'CrossVal':
         loops.cross_val(configs)
     else:
-        loops.single(configs)
+        raise ValueError('{} is not a valid training loop name'.format(configs['training_loop']))
 
 if __name__ == '__main__':
     main()
