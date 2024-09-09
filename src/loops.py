@@ -6,7 +6,7 @@ from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 from os import mkdir
 from os.path import join
 import time
-from utils import inference, plot_results, create_folds
+from utils import inference, plot_results, create_folds, cv_plot_results
 import shutil
 from keras import backend as K
 import gc
@@ -104,6 +104,10 @@ def cross_val(configs):
 
         # redefine fold directory
         configs.update({'results' : top_level_results})
+
+    print('\nPlotting CV Metrics...')
+    time.sleep(1)
+    cv_plot_results(configs)
 
     print('\nDone.')
 

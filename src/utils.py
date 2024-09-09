@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+from natsort import os_sorted
 
 
 class InputContradiction(Exception):
@@ -266,6 +267,7 @@ def inference(configs, model):
         img_full_path = os.path.join(img_path, fn + configs['image_ext'])
         inference_single_image(img_full_path, model, val_save_path)
 
+
 # load image, inference, and save predictions
 def inference_single_image(img_full_path, model, img_save_path):
     # get file path pieces
@@ -337,6 +339,7 @@ def plot_results(configs):
 
     fig.savefig(plot_save_path, bbox_inches="tight")
 
+
 def add_f1(metrics, val = False):
     if val == True:
         p = 'val_Precision'
@@ -345,6 +348,103 @@ def add_f1(metrics, val = False):
         p = 'Precision'
         r = 'Recall'
     return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))
+
+
+def cv_plot_results(configs):
+    # paths
+    results_path = os.path.join(configs['root'], configs['results'])
+    loss_save_path = os.path.join(results_path, 'loss.png')
+    metrics_save_path = os.path.join(results_path, 'metrics.png')
+
+    # get fold directory names and sort them using natural sorting
+    fold_dirs = os.listdir(results_path)
+    fold_dirs = os_sorted(fold_dirs)
+
+    # dict to hold dataframes for each fold
+    all_metrics = []
+    for fold in range(len(fold_dirs)):
+        # get metrics from csv
+        fold_metrics = pd.read_csv(os.path.join(results_path, fold_dirs[fold], 'metrics.csv'))
+
+        # add f1 columns to the dataframe
+        fold_metrics['f1'] = add_f1(fold_metrics)
+        fold_metrics['val_f1'] = add_f1(fold_metrics, val = True)
+
+        # convert to np array and add metrics array to list 
+        fold_metrics_np = fold_metrics.to_numpy()
+        all_metrics.append(fold_metrics_np)
+
+    # stack all metrics arrays along a new 3d axis
+    all_metrics = np.stack(all_metrics, axis=0)
+
+    # get epochs list (always the same)
+    epochs = all_metrics[0, :, 0].astype(int) + 1
+
+    # plot loss curves together on two separate plots
+    fig, axs = plt.subplots(2, 1, figsize=(12, 10))
+
+    for fold in range(configs['num_folds']):
+        # train/val losses
+        train_loss = all_metrics[fold, :, 4]
+        val_loss = all_metrics[fold, :, 8]
+
+        # plot losses
+        axs[0].plot(epochs, train_loss, label = 'Fold {}'.format(fold+1))
+        axs[1].plot(epochs, val_loss, label = 'Fold {}'.format(fold+1))
+
+    # formatting
+    axs[0].set_ylabel('Train Loss (BCE)')
+    axs[1].set_ylabel('Val Loss (BCE)')
+    for ax in axs:
+        ax.set_yscale('log')   
+        ax.set_xlim([0, configs['num_epochs']])
+        ax.set_xlabel('Epoch')
+        ax.grid(visible=True)
+        ax.legend()
+
+    fig.savefig(loss_save_path, bbox_inches="tight")
+
+    # get mean and stdev across all folds
+    num_metrics = np.shape(all_metrics)[-1]
+    metrics_mean = np.zeros((configs['num_epochs'], num_metrics))
+    metrics_std = np.zeros((configs['num_epochs'], num_metrics))
+
+    for metric in range(num_metrics):
+        for epoch in range(configs['num_epochs']):
+            metrics_mean[epoch, metric] = np.mean(all_metrics[:, epoch, metric])
+            metrics_std[epoch, metric] = np.std(all_metrics[:, epoch, metric])
+
+    # plot averaged metrics with std as error bars
+    fig, axs = plt.subplots(4, 1, figsize=(12, 20))
+
+    # settings specific to each plot 
+    titles = ['BCE Loss', 'Precision', 'Recall', 'F1-Score']
+    train_metrics_idcs = [4, 1, 2, 9]
+    val_metrics_idcs = [8, 5, 6, 10]
+
+    for i in range(len(axs)):
+        # means and stds
+        train_mean = metrics_mean[:, train_metrics_idcs[i]]
+        val_mean = metrics_mean[:, val_metrics_idcs[i]]
+
+        train_std = metrics_std[:, train_metrics_idcs[i]]
+        val_std = metrics_std[:, val_metrics_idcs[i]]
+
+        # plot mean
+        axs[i].errorbar(epochs, train_mean, yerr=train_std, fmt='-o', capsize=3, capthick=1, label='Train')
+        axs[i].errorbar(epochs, val_mean, yerr=val_std, fmt='-o', capsize=3, capthick=1, label='Val')
+
+        axs[i].set_xlabel('Epoch')
+        axs[i].set_ylabel(titles[i])
+        axs[i].set_xlim([1, configs['num_epochs']])
+        if i == 0:
+            axs[i].set_yscale('log')
+        else:
+            axs[i].set_yticks(ticks=np.arange(0,1.1,0.1))
+        axs[i].grid(visible=True)
+        axs[i].legend()
+
+    fig.savefig(metrics_save_path, bbox_inches="tight")
 
 
 def create_folds(img_list, num_folds):
