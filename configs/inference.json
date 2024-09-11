@@ -1,0 +1,16 @@
+{
+    "results" : "results",
+    "root" : "/home/aidenochoa/unet-compare/",
+    "encoder_name" : "Vanilla",
+    "encoder_filters" : [32, 64, 128, 256, 512],
+    "encoder_stages" : ["conv_block_00", "conv_block_10", "conv_block_20", "conv_block_30", "conv_block_40"],
+    "decoder_filters" : [256, 128, 64, 32],
+    "training_loop" : "Inference",
+    "image_ext" : ".tif",
+    "dataset_prefix" : "xingyu_bubble",
+    "input_shape" : [4096, 4096, 3],
+    "batch_size" : 1,
+    "weights_path" : "best.weights.h5",
+    "batchnorm" : true,
+    "l2_reg" : 0.0
+}
