@@ -303,9 +303,7 @@ def parse_inference_image(img_path, configs):
 
     # convert image to floats and normalize images ([0,255] -> [0.0, 1.0])
     image = image.astype('float32') / 255.0
-    print(np.shape(image))
     image = np.expand_dims(image, axis=0)
-    print(np.shape(image))
 
     # return two Tensor objects with loaded image and annotation data
     return image

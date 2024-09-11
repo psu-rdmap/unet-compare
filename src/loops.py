@@ -136,7 +136,6 @@ def inference(configs):
     images = fns.copy()
     images = map(lambda x: dataloader.parse_inference_image(x, configs), images)
     images = list(images)
-    print(type(images))
 
     # model
     print('\nFetching model and loading weights...')
@@ -148,8 +147,8 @@ def inference(configs):
     save_path = join(configs['root'], configs['results'])
 
     for i in range(len(fns)):
-        print(np.shape(images[i]))
-        pred = model(images[i], training=False)
+        pred = model.predict(images[i])
+        pred = tf.squeeze(pred, axis=0)
         fn_ext = split(fns[i])[1]
         keras.utils.save_img(join(save_path, fn_ext), pred)
 
