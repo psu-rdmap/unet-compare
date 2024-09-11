@@ -6,6 +6,7 @@ import tensorflow as tf
 import random
 import re
 import cv2
+import numpy as np
 
 random.seed(229)
 AUTOTUNE = tf.data.AUTOTUNE
@@ -42,6 +43,19 @@ def create_dataset(configs):
 
     # create a Tensorflow Dataset object
     return define_dataset(train_val_paths, configs)
+
+
+def create_inference_dataset(configs):
+    # define path to images
+    data_path = join(configs['root'], 'data/', configs['data_prefix'])
+
+    # initialize Dataset objects with a list of filenames
+    dataset = tf.data.Dataset.list_files(data_path + '/*' + configs['image_ext'])
+
+    # replace every image path in the training and validation directories with a loaded image and annotation pair
+    dataset = dataset.map(lambda x: parse_inference_image(x, configs), num_parallel_calls=AUTOTUNE)
+
+    return dataset.batch(1)
 
 
 def create_dstree(dest):
@@ -277,6 +291,24 @@ def parse_image(img_path, configs):
 
     # return two Tensor objects with loaded image and annotation data
     return image, annotation
+
+
+def parse_inference_image(img_path, configs):
+    # read image and load it into 3 channels (pre-trained backbones require 3)
+    image = cv2.imread(img_path, cv2.IMREAD_COLOR)
+
+    # resize image
+    resize_shape = configs['input_shape'][:2]
+    image = cv2.resize(image, resize_shape, interpolation = cv2.INTER_LANCZOS4)
+
+    # convert image to floats and normalize images ([0,255] -> [0.0, 1.0])
+    image = image.astype('float32') / 255.0
+    print(np.shape(image))
+    image = np.expand_dims(image, axis=0)
+    print(np.shape(image))
+
+    # return two Tensor objects with loaded image and annotation data
+    return image
 
 
 def split_data(configs):

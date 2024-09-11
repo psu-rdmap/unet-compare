@@ -3,14 +3,16 @@ import dataloader
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
-from os import mkdir
-from os.path import join
+from os import mkdir, listdir
+from os.path import join, split
 import time
 from utils import inference, plot_results, create_folds, cv_plot_results
 import shutil
 from keras import backend as K
 import gc
-
+import keras
+from glob import glob
+import numpy as np
 
 def single(configs):
     # dataset
@@ -114,8 +116,41 @@ def cross_val(configs):
     print('\nDone.')
 
 
+def inference(configs):
+    """
+    Needs:
+        Images
+        Model
+        Dest
+    """ 
 
+    # dataset
+    print('\nLoading images...')
+    time.sleep(2)
 
-    
-    
-    
+    # define path to images
+    data_path = join(configs['root'], 'data/', configs['dataset_prefix'])
+    fns = glob(data_path + '/*')
+
+    # replace fns with loaded numpy arrays
+    images = fns.copy()
+    images = map(lambda x: dataloader.parse_inference_image(x, configs), images)
+    images = list(images)
+    print(type(images))
+
+    # model
+    print('\nFetching model and loading weights...')
+    time.sleep(1)
+    model = models.Decoder(configs).decoder
+    model.load_weights(join(configs['root'], configs['weights_path']))
+
+    print('\nGenerating predictions and saving them...\n')
+    save_path = join(configs['root'], configs['results'])
+
+    for i in range(len(fns)):
+        print(np.shape(images[i]))
+        pred = model(images[i], training=False)
+        fn_ext = split(fns[i])[1]
+        keras.utils.save_img(join(save_path, fn_ext), pred)
+
+    print('\nDone.')

@@ -26,7 +26,7 @@ with open(args.configs, 'r') as f:
 print('\nChecking user input...')
 time.sleep(2)
 print()
-check_input(configs)
+#check_input(configs)
 
 def main():
     # print input to user for confirmation
@@ -42,6 +42,8 @@ def main():
     if configs['training_loop'] == 'CrossVal':
         print('\n---- Warning: cross validation selected...program execution time may be significant ----')
         loops.cross_val(configs)
+    elif configs['training_loop'] == 'Inference':
+        loops.inference(configs)
     else:
         loops.single(configs)
 
