@@ -1,3 +1,7 @@
+"""
+This module handles all operations related to the loading of data or creation of a training dataset
+"""
+
 from glob import glob
 from os import mkdir, listdir, remove
 from os.path import join, split, splitext, isdir
@@ -12,7 +16,7 @@ random.seed(229)
 AUTOTUNE = tf.data.AUTOTUNE
 tf.random.set_seed(3051)
 
-def create_dataset(configs):
+def create_dataset(configs : dict) -> tuple[dict, int, int]:
     """
     Create the training dataset and return a Tensorflow Dataset instance of it
 
@@ -24,9 +28,11 @@ def create_dataset(configs):
     Returns:
     --------
     Training and validation Dataset instances : dict
+    Number of train steps : int
+    Number of val steps : int
     """
     
-    # create directory structure
+    # create directory structure and remove previous dataset if it was never deleted
     ds_path = join(configs['root'], 'dataset')
     if isdir(ds_path):
         shutil.rmtree(ds_path)
@@ -45,20 +51,7 @@ def create_dataset(configs):
     return define_dataset(train_val_paths, configs)
 
 
-def create_inference_dataset(configs):
-    # define path to images
-    data_path = join(configs['root'], 'data/', configs['data_prefix'])
-
-    # initialize Dataset objects with a list of filenames
-    dataset = tf.data.Dataset.list_files(data_path + '/*' + configs['image_ext'])
-
-    # replace every image path in the training and validation directories with a loaded image and annotation pair
-    dataset = dataset.map(lambda x: parse_inference_image(x, configs), num_parallel_calls=AUTOTUNE)
-
-    return dataset.batch(1)
-
-
-def create_dstree(dest):
+def create_dstree(dest : str) -> dict[str, str]:
     """
     Create the directory tree given the top-dataset directory path
 
@@ -87,16 +80,14 @@ def create_dstree(dest):
     return {"train_path" : image_train_dir, "val_path" : image_val_dir}
 
 
-def populate_dstree(configs):
+def populate_dstree(configs : dict):
     """
     Copy files from data directory to empty dataset tree
 
     Parameters:
     ---------- 
-    root : str
-        Root path of the project
-    data_cfgs : dict
-        Dataset creation data (dataset prefix, filenames, extensions, etc.)
+    configs : dict
+        Input configs given by the user
     """
 
     # file sets
@@ -125,7 +116,7 @@ def populate_dstree(configs):
     copy_files(val_annotations, annotation_source, annotation_val_dest)
 
 
-def augment_dataset(configs, image_train_path):
+def augment_dataset(configs : dict, image_train_path : str):
     """
     Replace each image and annotation with eight geometric augmentations
 
@@ -148,7 +139,16 @@ def augment_dataset(configs, image_train_path):
         augment_single_image(ann)
 
 
-def augment_single_image(file_full_path):
+def augment_single_image(file_full_path : str):
+    """
+    Performs and saves eight unique geometric transformations on a given image then deletes the original image
+
+    Parameters:
+    ---------- 
+    file_full_path : str
+        Absolute path to a given file
+    """
+    
     # get file path pieces
     path, fn_ext = split(file_full_path)
     fn, ext = splitext(fn_ext)
@@ -180,13 +180,15 @@ def augment_single_image(file_full_path):
     remove(file_full_path)
 
 
-def define_dataset(train_val_paths, configs):
+def define_dataset(train_val_paths : dict, configs : dict) -> tuple[dict, int, int]:
     """
     Use created dataset to define Tensorflow Dataset instances for the training and validation sets
 
     Parameters:
     ---------- 
-    data_cfgs : dict
+    train_val_paths : dict
+        A dictionary containing paths to dataset train/val directories (e.g. dataset/images/train)
+    configs : dict
         Dictionary containing all data necessary to find the data and build the dataset
     
     Returns:
@@ -234,7 +236,7 @@ def define_dataset(train_val_paths, configs):
     return dataset, train_steps, val_steps
 
 
-def copy_files(files, source, dest):
+def copy_files(files : list, source : str, dest : str):
     """
     Copies all provided files from a source directory to a destination directory
 
@@ -254,7 +256,7 @@ def copy_files(files, source, dest):
 
 
 @tf.function
-def parse_image(img_path, configs):
+def parse_image(img_path : tf.str, configs : dict) -> tuple[tf.Tensor, tf.Tensor]:
     """
     Load an image and its annotation then resize it and normalize it
 
@@ -293,7 +295,23 @@ def parse_image(img_path, configs):
     return image, annotation
 
 
-def parse_inference_image(img_path, configs):
+def parse_inference_image(img_path : str, configs : dict) -> np.ndarray:
+    """
+    Load each image for inference as numpy arrays and pre-process them
+
+    Parameters
+    ----------
+    img_path : str
+        Absolute path to each inference image
+    configs : dict
+        Input configs provided by the user
+    
+    Returns
+    -------
+    Image : numpy.ndarray
+        A single normalized loaded image 
+    """
+     
     # read image and load it into 3 channels (pre-trained backbones require 3)
     image = cv2.imread(img_path, cv2.IMREAD_COLOR)
 
@@ -309,7 +327,7 @@ def parse_inference_image(img_path, configs):
     return image
 
 
-def split_data(configs):
+def split_data(configs : dict) -> dict:
     """
     Add training and validation sets to configs if necessary
 
@@ -355,7 +373,7 @@ def split_data(configs):
     return configs
     
 
-def auto_split(fns, val_hold_out):
+def auto_split(fns : list, val_hold_out : dict) -> tuple[list, list]:
     """
     Randomly select subsets of the fns list for training and validation
 

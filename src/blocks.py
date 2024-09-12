@@ -1,3 +1,7 @@
+"""
+This module handles the definition of the custom convolution layers used in UNet models
+"""
+
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, Conv2DTranspose
 from keras.regularizers import l2
