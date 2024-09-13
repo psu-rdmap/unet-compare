@@ -256,7 +256,7 @@ def copy_files(files : list, source : str, dest : str):
 
 
 @tf.function
-def parse_image(img_path : tf.str, configs : dict) -> tuple[tf.Tensor, tf.Tensor]:
+def parse_image(img_path : tf.string, configs : dict) -> tuple[tf.Tensor, tf.Tensor]:
     """
     Load an image and its annotation then resize it and normalize it
 
