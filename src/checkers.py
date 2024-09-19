@@ -159,17 +159,6 @@ def training(configs : dict):
         assert type(configs['augment']) == bool, 'Augment must be true or false'
 
 
-    if 'train' not in configs:
-        data_path = os.path.join('data/', configs['dataset_prefix'], 'images/')
-        assert os.path.isdir(data_path), 'Attempted to get retrieve all filenames in {}, but the directory does not exist'.format(data_path)
-        train_filenames = [os.path.splitext(fn)[0] for fn in os.listdir(data_path)]
-        configs.update({'train' : train_filenames})
-    else:
-        assert type(configs['train']) == list, 'Training image filenames must be an array of strings'
-        assert len(configs['train']) > 0, 'At least one training image filename must be provided'
-        assert all([type(fn) == str for fn in configs['train']]), 'All elements of the training filename set must be strings'
-
-
 def single(configs : dict):
     """
     Checks early stopping and val settings
@@ -197,7 +186,7 @@ def single(configs : dict):
             assert type(configs['patience']) == int, 'Patience must be a positive integer'
             assert configs['patience'] > 0, 'Patience must be a positive integer'
 
-
+    
     if 'val' not in configs:
         if 'auto_split' not in configs:
             raise KeyError('Auto split must be true if no val set is provided')
@@ -211,9 +200,30 @@ def single(configs : dict):
                 assert configs['val_hold_out'] < 1, 'Validation hold out percentage must be a decimal between 0 and 1'
     else:
         assert type(configs['val']) == list, 'Validation image filenames must be an array of strings'
-        assert configs['auto_split'] == False, 'Auto split must be false if no validation set is provided'
+        assert configs['auto_split'] == False, 'Auto split must be false if a validation set is provided'
         assert len(configs['val']) > 0, 'At least one validation image filename must be provided if a validation set is provided'
         assert all([type(fn) == str for fn in configs['val']]), 'All elements of the validation filename set must be strings'
+
+
+    if 'train' not in configs:
+        data_path = os.path.join('data/', configs['dataset_prefix'], 'images/')
+        assert os.path.isdir(data_path), 'Attempted to get retrieve filenames from {}, but the directory does not exist'.format(data_path)
+        train_filenames = [os.path.splitext(fn)[0] for fn in os.listdir(data_path)]
+        if 'val' not in configs:
+            configs.update({'train' : train_filenames})
+        else: 
+            for val_fn in configs['val']: train_filenames.remove(val_fn)
+            assert len(train_filenames) > 0, 'At least one image must be left for the train set '
+            configs.update({'train' : train_filenames})
+            assert ('auto_split' not in configs) or (configs['auto_split'] == False), 'Successfully retrieved train filenames, but auto split was true'            
+    else:
+        assert type(configs['train']) == list, 'Training image filenames must be an array of strings'
+        assert len(configs['train']) > 0, 'At least one training image filename must be provided'
+        assert all([type(fn) == str for fn in configs['train']]), 'All elements of the training filename set must be strings'
+
+    
+    if 'val' in configs:
+        assert all([val_fn not in configs['train'] for val_fn in configs['val']]), 'Validation filename detected in training set'
             
 
 def cross_val(configs : dict):
@@ -235,6 +245,18 @@ def cross_val(configs : dict):
     configs.update({'early_stopping' : False})
     configs.update({'auto_split' : False})
     assert 'val' not in configs, 'Do not provide a validation set, if using cross-validation'
+
+    
+    if 'train' not in configs:
+        data_path = os.path.join('data/', configs['dataset_prefix'], 'images/')
+        assert os.path.isdir(data_path), 'Attempted to get retrieve filenames from {}, but the directory does not exist'.format(data_path)
+        train_filenames = [os.path.splitext(fn)[0] for fn in os.listdir(data_path)]
+        configs.update({'train' : train_filenames})
+    else:
+        assert type(configs['train']) == list, 'Training image filenames must be an array of strings'
+        assert len(configs['train']) > 0, 'At least one training image filename must be provided'
+        assert all([type(fn) == str for fn in configs['train']]), 'All elements of the training filename set must be strings'
+
 
     if 'num_folds' not in configs:
         raise KeyError('No number of folds provided. It must be a positive integer greater than 1')

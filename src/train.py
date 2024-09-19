@@ -1,5 +1,5 @@
 """
-This module handles all preliminary operations for training such as taking input from the user
+This module handles all preliminary operations for training including taking input from the user, checking it, and calling the correct training loop
 """
 
 import os
@@ -29,31 +29,43 @@ args = parser.parse_args()
 with open(args.configs, 'r') as f:
     configs = json.load(f)
 
-# validate user input
-print('\nChecking user input...\n')
+# perform general checks on user input
+print('\nChecking user input...')
 time.sleep(2)
+print()
 checkers.general(configs)
 
-# print input to user for confirmation
-print('-'*30 + ' User Input ' + '-'*30)
-for key, val in configs.items():
-    print(key + ':', val)
-print('-'*72)
 
-# create top-level results directory
-mkdir(join(configs['root'], configs['results']))
+def main():
+    # create top-level results directory
+    mkdir(join(configs['root'], configs['results']))
 
-# save configs into results dir for reference
-with open(join(configs['root'], configs['results'], 'configs.json'), 'w') as con:
-    json.dump(configs, con)
+    # save configs into results dir for reference
+    with open(join(configs['root'], configs['results'], 'configs.json'), 'w') as con:
+        json.dump(configs, con)
 
-# run the chosen training loop
-if configs['training_loop'] == 'CrossVal':
-    checkers.cross_val(configs)
-    loops.cross_val_loop(configs)
-elif configs['training_loop'] == 'Inference':
-    checkers.inference(configs)
-    loops.inference_loop(configs)
-elif configs['training_loop'] == 'Single':
-    checkers.single(configs)
-    loops.single_loop(configs)
+    # perform loop-specific checks on user input then run chosen training loop
+    if configs['training_loop'] == 'CrossVal':
+        checkers.cross_val(configs)
+        print_input(configs)
+        #loops.cross_val_loop(configs)
+    elif configs['training_loop'] == 'Inference':
+        checkers.inference(configs)
+        print_input(configs)
+        #loops.inference_loop(configs)
+    elif configs['training_loop'] == 'Single':
+        checkers.single(configs)
+        print_input(configs)
+        #loops.single_loop(configs)
+
+
+def print_input(configs : dict):
+    # print input to user for confirmation
+    print('-'*30 + ' User Input ' + '-'*30)
+    for key, val in configs.items():
+        print(key + ':', val)
+    print('-'*72)
+
+
+if __name__ == '__main__':
+    main()

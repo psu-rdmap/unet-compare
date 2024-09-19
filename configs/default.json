@@ -4,6 +4,7 @@
     "encoder_filters" : [32, 64, 128, 256, 512],
     "encoder_stages" : ["conv_block_00", "conv_block_10", "conv_block_20", "conv_block_30", "conv_block_40"],
     "decoder_filters" : [256, 128, 64, 32],
+    "decoder_name" : "UNet",
     "training_loop" : "Single",
     "learning_rate" : 1e-3,
     "l2_reg" : 1e-3,
@@ -18,17 +19,5 @@
     "batch_size" : 1,
     "augment" : true,
     "auto_split" : true,
-    "val_hold_out" : 0.4,
-    "train" : [
-        "1",
-        "11",
-        "12",
-        "14",
-        "16",
-        "24",
-        "25",
-        "26",
-        "30",
-        "31"
-    ]
+    "val_hold_out" : 0.4
 }
