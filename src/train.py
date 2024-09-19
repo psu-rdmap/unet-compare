@@ -50,10 +50,10 @@ with open(join(configs['root'], configs['results'], 'configs.json'), 'w') as con
 # run the chosen training loop
 if configs['training_loop'] == 'CrossVal':
     checkers.cross_val(configs)
-    loops.cross_val(configs)
+    loops.cross_val_loop(configs)
 elif configs['training_loop'] == 'Inference':
     checkers.inference(configs)
-    loops.inference(configs)
+    loops.inference_loop(configs)
 elif configs['training_loop'] == 'Single':
     checkers.single(configs)
-    loops.single(configs)
+    loops.single_loop(configs)

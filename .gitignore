@@ -2,3 +2,4 @@ env/
 src/__pychache__/
 results*
 last_run.out
+run.sh

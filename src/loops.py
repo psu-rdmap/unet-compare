@@ -19,7 +19,7 @@ from glob import glob
 import numpy as np
 
 
-def single(configs : dict):
+def single_loop(configs : dict):
     """
     Runs a single epoch-based training loop
 
@@ -40,14 +40,14 @@ def single(configs : dict):
     print('\nFetching and compiling model...')
     time.sleep(0.5)
     model = models.Decoder(configs).decoder
-    
+        
     # training settings
     model.compile(
         optimizer = Adam(learning_rate=configs['learning_rate']),
         loss = 'binary_crossentropy',
         metrics = ['accuracy', 'Precision', 'Recall']
     )
-
+    
     callbacks = [
         CSVLogger(
             join(configs['root'], configs['results'], 'metrics.csv'), 
@@ -63,7 +63,7 @@ def single(configs : dict):
     ]
     if configs['early_stopping'] == True:
         callbacks.append(EarlyStopping(patience = configs['patience']))
-
+    
     # training
     print('\nStarting training loop...\n')
     model.fit(
@@ -92,9 +92,9 @@ def single(configs : dict):
 
     if configs['training_loop'] == 'Single':
         print('\nDone.')
+        
 
-
-def cross_val(configs : dict):    
+def cross_val_loop(configs : dict):    
     """
     Runs single training loop many times on different hold out sets
 
@@ -126,7 +126,7 @@ def cross_val(configs : dict):
         print('-'*20 + ' Fold {} '.format(fold+1) + '-'*20)
 
         # train fold
-        single(configs)
+        single_loop(configs)
 
         # reset results directory for next fold
         configs.update({'results' : top_level_results})
@@ -139,7 +139,7 @@ def cross_val(configs : dict):
     print('\nDone.')
 
 
-def inference(configs : dict):
+def inference_loop(configs : dict):
     """
     Feeds images into a trained model and saves predictions
 
