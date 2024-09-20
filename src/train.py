@@ -48,15 +48,15 @@ def main():
     if configs['training_loop'] == 'CrossVal':
         checkers.cross_val(configs)
         print_input(configs)
-        #loops.cross_val_loop(configs)
+        loops.cross_val_loop(configs)
     elif configs['training_loop'] == 'Inference':
         checkers.inference(configs)
         print_input(configs)
-        #loops.inference_loop(configs)
+        loops.inference_loop(configs)
     elif configs['training_loop'] == 'Single':
         checkers.single(configs)
         print_input(configs)
-        #loops.single_loop(configs)
+        loops.single_loop(configs)
 
 
 def print_input(configs : dict):
