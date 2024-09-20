@@ -40,7 +40,10 @@ def single_loop(configs : dict):
     print('\nFetching and compiling model...')
     time.sleep(0.5)
     model = models.Decoder(configs).decoder
-        
+    
+    model.summary()
+
+    """
     # training settings
     model.compile(
         optimizer = Adam(learning_rate=configs['learning_rate']),
@@ -63,6 +66,7 @@ def single_loop(configs : dict):
     ]
     if configs['early_stopping'] == True:
         callbacks.append(EarlyStopping(patience = configs['patience']))
+    
     
     # training
     print('\nStarting training loop...\n')
@@ -92,6 +96,7 @@ def single_loop(configs : dict):
 
     if configs['training_loop'] == 'Single':
         print('\nDone.')
+    """
         
 
 def cross_val_loop(configs : dict):    

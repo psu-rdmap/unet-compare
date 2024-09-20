@@ -56,8 +56,8 @@ def general(configs : dict):
     if 'decoder_filters' not in configs:
         KeyError('No decoder filter numbers provided. It must be a list of 4 integers')
     else:
-        assert type(configs['decoder_filters']) == list, 'Decoder filter numbers must be an array of 4 positive integers'
-        assert len(configs['decoder_filters']) == 4, 'Decoder filter numbers must have 4 integers'
+        assert type(configs['decoder_filters']) == list, 'Decoder filter numbers must be an array of 5 positive integers'
+        assert len(configs['decoder_filters']) == 5, 'Decoder filter numbers must have 4 integers'
         assert all([type(filters) == int for filters in configs['decoder_filters']]), 'Decoder filter numbers must be integers'
         assert all([filters > 0 for filters in configs['decoder_filters']]), 'Decoder filter numbers must be positive'
     
@@ -248,7 +248,7 @@ def cross_val(configs : dict):
 
     
     if 'train' not in configs:
-        data_path = os.path.join('data/', configs['dataset_prefix'], 'images/')
+        data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
         assert os.path.isdir(data_path), 'Attempted to get retrieve filenames from {}, but the directory does not exist'.format(data_path)
         train_filenames = [os.path.splitext(fn)[0] for fn in os.listdir(data_path)]
         configs.update({'train' : train_filenames})

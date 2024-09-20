@@ -87,14 +87,75 @@ class Decoder(tf.keras.Model):
             cat0_4 = Concatenate(name='cat_04')([up0_4, encoder_outputs[0]])
             conv0_4 = ConvBlock(self.decoder_filters[3], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_04')(cat0_4)
                 
+            if self.encoder_name == 'EfficientNetB7':
+                up_out = UpsampleUnit(self.decoder_filters[4], self.batchnorm, self.l2_reg, name='upsample_out')(conv0_4)
+                last_unit = up_out
+            else:
+                last_unit = conv0_4
+
             output = Conv2D(1, 1, activation='sigmoid', name='output', kernel_initializer='he_normal',
-                                        padding='same', kernel_regularizer=l2(self.l2_reg))(conv0_4)
+                                        padding='same', kernel_regularizer=l2(self.l2_reg))(last_unit)
 
             self.decoder = keras.Model(inputs=self.encoder.input, outputs=output, name='UNet')
 
+
         elif self.decoder_name == 'UNet++':
-            raise NotImplementedError('UNet++ not implemented yet')
-        
+            # column 1
+            up0_1 = UpsampleUnit(self.decoder_filters[3], self.batchnorm, self.l2_reg, name='upsample_01')(encoder_outputs[1])
+            cat0_1 = Concatenate(name='cat_01')([up0_1, encoder_outputs[0]])
+            conv0_1 = ConvBlock(self.decoder_filters[3], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_01')(cat0_1)
+
+            up1_1 = UpsampleUnit(self.decoder_filters[2], self.batchnorm, self.l2_reg, name='upsample_11')(encoder_outputs[2])
+            cat1_1 = Concatenate(name='cat_11')([up1_1, encoder_outputs[1]])
+            conv1_1 = ConvBlock(self.decoder_filters[2], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_11')(cat1_1)
+
+            up2_1 = UpsampleUnit(self.decoder_filters[1], self.batchnorm, self.l2_reg, name='upsample_21')(encoder_outputs[3])
+            cat2_1 = Concatenate(name='cat_21')([up2_1, encoder_outputs[2]])
+            conv2_1 = ConvBlock(self.decoder_filters[1], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_21')(cat2_1)
+
+            up3_1 = UpsampleUnit(self.decoder_filters[0], self.batchnorm, self.l2_reg, name='upsample_31')(encoder_outputs[4])
+            cat3_1 = Concatenate(name='cat_31')([up3_1, encoder_outputs[3]])
+            conv3_1 = ConvBlock(self.decoder_filters[0], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_31')(cat3_1)
+
+            # column 2
+            up0_2 = UpsampleUnit(self.decoder_filters[3], self.batchnorm, self.l2_reg, name='upsample_02')(conv1_1)
+            cat0_2 = Concatenate(name='cat_02')([up0_2, conv0_1, encoder_outputs[0]])
+            conv0_2 = ConvBlock(self.decoder_filters[3], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_02')(cat0_2)
+
+            up1_2 = UpsampleUnit(self.decoder_filters[2], self.batchnorm, self.l2_reg, name='upsample_12')(conv2_1)
+            cat1_2 = Concatenate(name='cat_12')([up1_2, conv1_1, encoder_outputs[1]])
+            conv1_2 = ConvBlock(self.decoder_filters[2], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_12')(cat1_2)
+
+            up2_2 = UpsampleUnit(self.decoder_filters[1], self.batchnorm, self.l2_reg, name='upsample_22')(conv3_1)
+            cat2_2 = Concatenate(name='cat_22')([up2_2, conv2_1, encoder_outputs[2]])
+            conv2_2 = ConvBlock(self.decoder_filters[1], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_22')(cat2_2)
+
+            # column 3
+            up0_3 = UpsampleUnit(self.decoder_filters[3], self.batchnorm, self.l2_reg, name='upsample_03')(conv1_2)
+            cat0_3 = Concatenate(name='cat_03')([up0_3, conv0_2, conv0_1, encoder_outputs[0]])
+            conv0_3 = ConvBlock(self.decoder_filters[3], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_03')(cat0_3)
+
+            up1_3 = UpsampleUnit(self.decoder_filters[2], self.batchnorm, self.l2_reg, name='upsample_13')(conv2_2)
+            cat1_3 = Concatenate(name='cat_13')([up1_3, conv1_2, conv1_1, encoder_outputs[1]])
+            conv1_3 = ConvBlock(self.decoder_filters[2], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_13')(cat1_3)
+            
+            # column 3
+            up0_4 = UpsampleUnit(self.decoder_filters[3], self.batchnorm, self.l2_reg, name='upsample_04')(conv1_3)
+            cat0_4 = Concatenate(name='cat_04')([up0_4, conv0_3, conv0_2, conv0_1, encoder_outputs[0]])
+            conv0_4 = ConvBlock(self.decoder_filters[3], batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_04')(cat0_4)
+
+            if self.encoder_name == 'EfficientNetB7':
+                up_out = UpsampleUnit(self.decoder_filters[4], self.batchnorm, self.l2_reg, name='upsample_out')(conv0_4)
+                last_unit = up_out
+            else:
+                last_unit = conv0_4
+
+            output = Conv2D(1, 1, activation='sigmoid', name='output', kernel_initializer='he_normal',
+                                        padding='same', kernel_regularizer=l2(self.l2_reg))(last_unit)
+            
+            self.decoder = keras.Model(inputs=self.encoder.input, outputs=output, name='UNet++')
+
+
         else:
             raise ValueError('{} is not a valid decoder name'.format(self.decoder_name))
     
