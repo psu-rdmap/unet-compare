@@ -153,7 +153,7 @@ class Decoder(tf.keras.Model):
             output = Conv2D(1, 1, activation='sigmoid', name='output', kernel_initializer='he_normal',
                                         padding='same', kernel_regularizer=l2(self.l2_reg))(last_unit)
             
-            self.decoder = keras.Model(inputs=self.encoder.input, outputs=output, name='UNet++')
+            self.decoder = keras.Model(inputs=self.encoder.input, outputs=output, name='UNetpp')
 
 
         else:
