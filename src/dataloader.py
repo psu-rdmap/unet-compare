@@ -116,6 +116,25 @@ def populate_dstree(configs : dict):
     copy_files(val_annotations, annotation_source, annotation_val_dest)
 
 
+def copy_files(files : list, source : str, dest : str):
+    """
+    Copies all provided files from a source directory to a destination directory
+
+    Parameters:
+    ---------- 
+    files : list
+        Filenames in source directory to be copied
+    source : str
+        Path to current location of files
+    dest : str
+        Path to where files are to be copied to
+    """
+
+    for f in files:
+        src = join(source, f)
+        shutil.copy(src, dest)
+
+
 def augment_dataset(configs : dict, image_train_path : str):
     """
     Replace each image and annotation with eight geometric augmentations
@@ -213,6 +232,11 @@ def define_dataset(train_val_paths : dict, configs : dict) -> tuple[dict, int, i
     train_dataset = train_dataset.map(lambda x: parse_image(x, configs), num_parallel_calls=AUTOTUNE)
     val_dataset = val_dataset.map(lambda x: parse_image(x, configs), num_parallel_calls=AUTOTUNE)
 
+    # get statistics for standardization (only from train) and apply to each train/val image set
+    m, s = get_ds_stats(train_dataset)
+    train_dataset = train_dataset.map(lambda image, annotation : ((image - m) / s, annotation))
+    val_dataset = val_dataset.map(lambda image, annotation : ((image - m) / s, annotation))
+
     BUFFER_SIZE = 48
 
     # define dict to contain Dataset instances
@@ -234,25 +258,6 @@ def define_dataset(train_val_paths : dict, configs : dict) -> tuple[dict, int, i
     val_steps = val_size // 1
 
     return dataset, train_steps, val_steps
-
-
-def copy_files(files : list, source : str, dest : str):
-    """
-    Copies all provided files from a source directory to a destination directory
-
-    Parameters:
-    ---------- 
-    files : list
-        Filenames in source directory to be copied
-    source : str
-        Path to current location of files
-    dest : str
-        Path to where files are to be copied to
-    """
-
-    for f in files:
-        src = join(source, f)
-        shutil.copy(src, dest)
 
 
 def parse_image(img_path : tf.string, configs : dict) -> tuple[tf.Tensor, tf.Tensor]:
@@ -287,6 +292,33 @@ def parse_image(img_path : tf.string, configs : dict) -> tuple[tf.Tensor, tf.Ten
 
     # return two Tensor objects with loaded image and annotation data
     return image, annotation
+
+
+def get_ds_stats(dataset : tf.data.Dataset) -> tuple[tf.Tensor, tf.Tensor]:
+    """
+    Computes mean and standard deviation for standardization of grayscale images
+    
+    Parameters
+    ----------
+    dataset : tf.data.Dataset
+        Dataset object with image/annotation pairs as elements
+
+    Returns
+    -------
+    Dataset mean and standard deviation for each channel : tf.Tensor, tf.Tensor
+    """
+
+    img_count, mean, std = 0, tf.zeros(3), tf.zeros(3)
+
+    for image, __ in dataset:
+        mean += tf.math.reduce_mean(image, axis=[0,1])
+        std += tf.math.reduce_std(image, axis=[0,1])
+        img_count += 1
+
+    mean /= img_count
+    std /= img_count
+
+    return mean, std
 
 
 def parse_inference_image(img_path : str, configs : dict) -> np.ndarray:
