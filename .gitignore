@@ -2,7 +2,7 @@ env/
 src/__pycache__/
 results*
 last_run.out
-run.sh
 dataset/
 src/test.py
 requirements.txt
+run.sh

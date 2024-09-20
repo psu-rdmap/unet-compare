@@ -1,0 +1,28 @@
+{
+	"encoder_name" : "Vanilla",
+	"encoder_filters" : [64, 128, 256, 512, 1024],
+	"encoder_stages" : ["conv_block_00", "conv_block_10", "conv_block_20", "conv_block_30", "conv_block_40"],
+	"decoder_filters" : [512, 256, 128, 64, 32],
+	"decoder_name" : "UNet",
+	"training_loop" : "Single",
+	"learning_rate" : 1e-4,
+	"l2_reg" : 1e-4,
+	"batchnorm" : true,
+	"num_epochs" : 100,
+	"early_stopping" : true,
+	"patience" : 25,
+	"image_ext" : ".jpg",
+	"annotation_ext" : ".png",
+	"dataset_prefix" : "gb",
+	"input_shape" : [1024, 1024, 3],
+	"batch_size" : 1,
+	"augment" : true,
+	"val_hold_out" : 0.30,
+	"auto_split" : false,
+	"val" : [
+		"1",
+		"4",
+		"5",
+		"7"
+	]
+}
