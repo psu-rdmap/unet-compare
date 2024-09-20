@@ -255,7 +255,7 @@ def copy_files(files : list, source : str, dest : str):
         shutil.copy(src, dest)
 
 
-def parse_image(img_path : tf.string, configs : dict) -> dict:
+def parse_image(img_path : tf.string, configs : dict) -> tuple[tf.Tensor, tf.Tensor]:
     """
     Load an image and its annotation then resize it and normalize it
 
@@ -268,7 +268,7 @@ def parse_image(img_path : tf.string, configs : dict) -> dict:
     
     Returns:
     --------
-    Loaded image and annotation pair : dict
+    Loaded image and annotation pair : tf.Tensor, tf.Tensor
     """
     
     # read image and load it into 3 channels (pre-trained backbones require 3)
@@ -286,7 +286,7 @@ def parse_image(img_path : tf.string, configs : dict) -> dict:
     annotation = tf.cast(annotation, tf.float32) / 255.0
 
     # return two Tensor objects with loaded image and annotation data
-    return {'image': image, 'annotation': annotation}
+    return image, annotation
 
 
 def parse_inference_image(img_path : str, configs : dict) -> np.ndarray:
