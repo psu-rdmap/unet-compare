@@ -19,6 +19,11 @@ class ConvUnit(tf.keras.Layer):
         self.batchnorm = batchnorm
         self.l2_reg = l2_reg
                 
+        self.conv = None
+        self.bn = None
+        self.act = None
+
+    def build(self):
         self.conv = Conv2D(self.num_filters, 
                            3,
                            padding='same', 
@@ -27,13 +32,17 @@ class ConvUnit(tf.keras.Layer):
                            kernel_initializer='he_normal', 
                            kernel_regularizer=l2(self.l2_reg)
         )
-        self.bn = BatchNormalization(name='bn_'+self.unit_index)
+
+        if self.batchnorm:
+            self.bn = BatchNormalization(name='bn_'+self.unit_index)
+        
         self.act = Activation('relu', name='relu_'+self.unit_index)
 
-    def call(self, inputs):
+
+    def call(self, inputs, training=False):
         conv = self.conv(inputs)
         if self.batchnorm:
-            bn = self.bn(conv)
+            bn = self.bn(conv, training=training)
             return self.act(bn)
         else:
             return self.act(conv)
@@ -51,6 +60,10 @@ class ConvBlock(tf.keras.Layer):
         self.batchnorm = batchnorm
         self.l2_reg = l2_reg
 
+        self.conv_unit_1 = None
+        self.conv_unit_2 = None
+    
+    def build(self):
         self.conv_unit_1 = ConvUnit(self.num_filters, self.index+'a', self.batchnorm, self.l2_reg)
         self.conv_unit_2 = ConvUnit(self.num_filters, self.index+'b', self.batchnorm, self.l2_reg)
 
@@ -70,7 +83,12 @@ class UpsampleUnit(tf.keras.Layer):
         self.index = kwargs.__getitem__('name')[-2:] # last two characters in name are always layer index
         self.batchnorm = batchnorm
         self.l2_reg = l2_reg
-                
+
+        self.conv_up = None
+        self.bn = None
+        self.act = None
+    
+    def build(self):
         self.conv_up = Conv2DTranspose(self.num_filters,
                                        2,
                                        padding='same', 
@@ -80,13 +98,16 @@ class UpsampleUnit(tf.keras.Layer):
                                        kernel_regularizer=l2(self.l2_reg),
                                        strides=2        
         )
-        self.bn = BatchNormalization(name='bn_'+self.index)
+
+        if self.batchnorm:
+            self.bn = BatchNormalization(name='bn_'+self.index)
+
         self.act = Activation('relu', name='relu_'+self.index)
 
-    def call(self, inputs):
+    def call(self, inputs, training=False):
         conv_up = self.conv_up(inputs)
         if self.batchnorm:
-            bn = self.bn(conv_up)
+            bn = self.bn(conv_up, training=training)
             return self.act(bn)
         else:
             return self.act(conv_up)
