@@ -158,6 +158,11 @@ def training(configs : dict):
     else:
         assert type(configs['augment']) == bool, 'Augment must be true or false'
 
+    if 'save_best_only' not in configs:
+        raise KeyError('Specify whether to only checkpoint model when val loss improves. It must be true or false')
+    else:
+        assert type(configs['save_best_only']) == bool, 'Save best only must be true or false'
+
 
 def single(configs : dict):
     """
@@ -186,7 +191,7 @@ def single(configs : dict):
             assert type(configs['patience']) == int, 'Patience must be a positive integer'
             assert configs['patience'] > 0, 'Patience must be a positive integer'
 
-    
+
     if 'val' not in configs:
         if 'auto_split' not in configs:
             raise KeyError('Auto split must be true if no val set is provided')

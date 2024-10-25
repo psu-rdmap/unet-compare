@@ -55,13 +55,13 @@ def single_loop(configs : dict):
             append=False
         ),
         ModelCheckpoint(
-            join(configs['root'], configs['results'], 'best.weights.h5'), 
+            join(configs['root'], configs['results'], 'weights.h5'), 
             verbose=1, 
-            save_best_only=True, 
+            save_best_only=configs['save_best_only'], 
             save_weights_only=True
         )
     ]
-    if configs['early_stopping'] == True:
+    if configs['early_stopping']:
         callbacks.append(EarlyStopping(patience = configs['patience']))
     
     
@@ -76,6 +76,10 @@ def single_loop(configs : dict):
         callbacks=callbacks,
         verbose=2 # 1 = live progress bar, 2 = one line per epoch
     )
+
+    # load weights corresponding to minimum val loss
+    if configs['save_best_only']:
+        model.load_weights(join(configs['results'], 'weights.h5'))
 
     # inferences train/val sets and save results into results
     print('\nInferencing image sets...\n')
