@@ -30,7 +30,7 @@ def single_loop(configs : dict):
     """
     
     # get dataset
-    print('\nCreating dataset...')
+    print('Creating dataset...')
     time.sleep(2)
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
     print('\nTraining images: ', configs['train'])
@@ -50,12 +50,12 @@ def single_loop(configs : dict):
     
     callbacks = [
         CSVLogger(
-            join(configs['root'], configs['results'], 'metrics.csv'), 
+            join(configs['results'], 'metrics.csv'), 
             separator=',', 
             append=False
         ),
         ModelCheckpoint(
-            join(configs['root'], configs['results'], 'weights.h5'), 
+            join(configs['results'], 'model.weights.h5'), 
             verbose=1, 
             save_best_only=configs['save_best_only'], 
             save_weights_only=True
@@ -79,7 +79,7 @@ def single_loop(configs : dict):
 
     # load weights corresponding to minimum val loss
     if configs['save_best_only']:
-        model.load_weights(join(configs['results'], 'weights.h5'))
+        model.load_weights(join(configs['results'], 'model.weights.h5'))
 
     # inferences train/val sets and save results into results
     print('\nInferencing image sets...\n')
@@ -154,7 +154,7 @@ def inference_loop(configs : dict):
         Input configs provided by the user
     """
 
-    print('\nLoading images...')
+    print('Loading images...')
     time.sleep(2)
 
     # define path to images
@@ -177,7 +177,7 @@ def inference_loop(configs : dict):
     save_path = join(configs['root'], configs['results'])
 
     for i in range(len(fns)):
-        pred = model.predict(images[i])
+        pred = model(images[i], training=False)
         pred = tf.squeeze(pred, axis=0) # drop batch dimension
         fn_ext = split(fns[i])[1] 
         keras.utils.save_img(join(save_path, fn_ext), pred)

@@ -158,10 +158,17 @@ def training(configs : dict):
     else:
         assert type(configs['augment']) == bool, 'Augment must be true or false'
 
+
     if 'save_best_only' not in configs:
         raise KeyError('Specify whether to only checkpoint model when val loss improves. It must be true or false')
     else:
         assert type(configs['save_best_only']) == bool, 'Save best only must be true or false'
+
+
+    if 'standardize' not in configs:
+        raise KeyError('Specify whether to standardize the dataset prior to training. It must be true or false')
+    else:
+        assert type(configs['standardize']) == bool, 'Standardize must be true or false'
 
 
 def single(configs : dict):
@@ -285,9 +292,10 @@ def inference(configs : dict):
     Updated configs : dict
     """
 
-    if 'weights' not in configs:
+    if 'weights_path' not in configs:
         raise KeyError('No path to weights provided')
     else:
-        assert type(configs['weights']) == str, 'Weights must be a path like string to the weights file'
-        weights_path = os.path.join(configs['root'], configs['weights'])
-        assert os.path.exists(weights_path), 'Weights file does not exist at {}'.format(weights_path)  
+        assert type(configs['weights_path']) == str, 'Weights must be a path like string to the weights file'
+        weights_path = os.path.join(configs['root'], configs['weights_path'])
+        assert os.path.exists(weights_path), 'Weights file does not exist at {}'.format(weights_path) 
+        configs['weights_path'] = weights_path 

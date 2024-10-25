@@ -232,10 +232,11 @@ def define_dataset(train_val_paths : dict, configs : dict) -> tuple[dict, int, i
     train_dataset = train_dataset.map(lambda x: parse_image(x, configs), num_parallel_calls=AUTOTUNE)
     val_dataset = val_dataset.map(lambda x: parse_image(x, configs), num_parallel_calls=AUTOTUNE)
 
-    # get statistics for standardization (only from train) and apply to each train/val image set
-    m, s = get_ds_stats(train_dataset)
-    train_dataset = train_dataset.map(lambda image, annotation : ((image - m) / s, annotation))
-    val_dataset = val_dataset.map(lambda image, annotation : ((image - m) / s, annotation))
+    if configs['standardize']:
+        # get statistics for standardization (only from train) and apply to each train/val image set
+        m, s = get_ds_stats(train_dataset)
+        train_dataset = train_dataset.map(lambda image, annotation : ((image - m) / s, annotation))
+        val_dataset = val_dataset.map(lambda image, annotation : ((image - m) / s, annotation))
 
     BUFFER_SIZE = 48
 

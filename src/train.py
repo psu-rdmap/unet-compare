@@ -38,10 +38,10 @@ checkers.general(configs)
 
 def main():
     # create top-level results directory
-    mkdir(join(configs['root'], configs['results']))
+    mkdir(configs['results'])
 
     # save configs into results dir for reference
-    with open(join(configs['root'], configs['results'], 'configs.json'), 'w') as con:
+    with open(join(configs['results'], 'configs.json'), 'w') as con:
         json.dump(configs, con)
 
     # perform loop-specific checks on user input then run chosen training loop

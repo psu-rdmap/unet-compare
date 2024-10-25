@@ -70,7 +70,7 @@ def inference_single_image(img_full_path : str, model : tf.keras.Model, img_save
     img = tf.expand_dims(img, axis=0)
     
     # get prediction
-    pred = model.predict(img, verbose = 2)
+    pred = model(img, training=False)
 
     # save pred
     pred_save_path = os.path.join(img_save_path, fn + '.png')
