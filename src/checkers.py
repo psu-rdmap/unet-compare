@@ -60,14 +60,6 @@ def general(configs : dict):
         assert len(configs['decoder_filters']) == 5, 'Decoder filter numbers must have 4 integers'
         assert all([type(filters) == int for filters in configs['decoder_filters']]), 'Decoder filter numbers must be integers'
         assert all([filters > 0 for filters in configs['decoder_filters']]), 'Decoder filter numbers must be positive'
-    
-
-    if 'encoder_stages' not in configs:
-        raise KeyError('No encoder stages array provided. Must be an array of 5 strings')
-    else:
-        assert type(configs['encoder_stages']) == list, 'Encoder stages must be an array of 5 strings'
-        assert len(configs['encoder_stages']) == 5, 'Encoder stages must have 5 stages'
-        assert all([type(stage) == str for stage in configs['encoder_stages']]), 'Encoder stages must be strings'
 
 
     if 'dataset_prefix' not in configs:

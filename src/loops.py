@@ -82,7 +82,7 @@ def single_loop(configs : dict):
         model.load_weights(join(configs['results'], 'model.weights.h5'))
 
     # inferences train/val sets and save results into results
-    print('\nInferencing image sets...\n')
+    print('\nInferencing image sets...')
     inference(configs, model)
 
     # plot loss, precision, recall, and f1

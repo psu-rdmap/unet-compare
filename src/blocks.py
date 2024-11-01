@@ -40,12 +40,10 @@ class ConvUnit(tf.keras.Layer):
 
 
     def call(self, inputs, training=False):
-        conv = self.conv(inputs)
+        x = self.conv(inputs)
         if self.batchnorm:
-            bn = self.bn(conv, training=training)
-            return self.act(bn)
-        else:
-            return self.act(conv)
+            x = self.bn(x, training=training)
+        return self.act(x)
 
 
 class ConvBlock(tf.keras.Layer):
@@ -68,8 +66,8 @@ class ConvBlock(tf.keras.Layer):
         self.conv_unit_2 = ConvUnit(self.num_filters, self.index+'b', self.batchnorm, self.l2_reg)
 
     def call(self, inputs):
-        conv1 = self.conv_unit_1(inputs)
-        return self.conv_unit_2(conv1)
+        x = self.conv_unit_1(inputs)
+        return self.conv_unit_2(x)
     
 
 class UpsampleUnit(tf.keras.Layer):
@@ -105,9 +103,7 @@ class UpsampleUnit(tf.keras.Layer):
         self.act = Activation('relu', name='relu_'+self.index)
 
     def call(self, inputs, training=False):
-        conv_up = self.conv_up(inputs)
+        x = self.conv_up(inputs)
         if self.batchnorm:
-            bn = self.bn(conv_up, training=training)
-            return self.act(bn)
-        else:
-            return self.act(conv_up)
+            x = self.bn(x, training=training)
+        return self.act(x)
