@@ -30,7 +30,7 @@ def general(configs : dict):
         assert configs['training_loop'] in training_loops, 'Provided training loop is invalid. Choose from: {}, {}, {}'.format(*training_loops)
 
 
-    encoders = ['Vanilla', 'EfficientNetB7']
+    encoders = ['UNet', 'EfficientNetB7']
     if 'encoder_name' not in configs:
         raise KeyError('No encoder name provided. Choose from: {}, {}'.format(*encoders))
     else:

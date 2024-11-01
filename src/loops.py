@@ -39,7 +39,7 @@ def single_loop(configs : dict):
     # get model
     print('\nFetching and compiling model...')
     time.sleep(0.5)
-    model = models.Decoder(configs).decoder
+    model = models.UNet(configs)
 
     # training settings
     model.compile(
