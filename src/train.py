@@ -39,11 +39,7 @@ checkers.general(configs)
 def main():
     # create top-level results directory
     mkdir(configs['results'])
-
-    # save configs into results dir for reference
-    with open(join(configs['results'], 'configs.json'), 'w') as con:
-        json.dump(configs, con)
-
+    
     # perform loop-specific checks on user input then run chosen training loop
     if configs['training_loop'] == 'CrossVal':
         checkers.cross_val(configs)
@@ -57,6 +53,10 @@ def main():
         checkers.single(configs)
         print_input(configs)
         loops.single_loop(configs)
+    
+    # save configs into results dir for reference
+    with open(join(configs['results'], 'configs.json'), 'w') as con:
+        json.dump(configs, con)
 
 
 def print_input(configs : dict):
