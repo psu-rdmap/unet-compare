@@ -39,7 +39,7 @@ def single_loop(configs : dict):
     # get model
     print('\nFetching and compiling model...')
     time.sleep(0.5)
-    model = models.UNet(configs)
+    model = models.get_model(configs)
 
     # training settings
     model.compile(
@@ -63,7 +63,6 @@ def single_loop(configs : dict):
     ]
     if configs['early_stopping']:
         callbacks.append(EarlyStopping(patience = configs['patience']))
-    
     
     # training
     print('\nStarting training loop...\n')
@@ -169,7 +168,7 @@ def inference_loop(configs : dict):
     # build model and load weights
     print('\nFetching model and loading weights...')
     time.sleep(1)
-    model = models.Decoder(configs).decoder
+    model = models.UNet(configs)
     model.load_weights(join(configs['root'], configs['weights_path']))
 
     # create predictions for each image

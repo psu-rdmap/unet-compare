@@ -10,175 +10,254 @@ from blocks import ConvBlock, UpsampleUnit
 from tensorflow.keras.applications import EfficientNetB7
 
 
-class Encoder(tf.keras.Model):
-    """
-    This represents the encoder of the UNet Model. Either U-Net or EfficientNetB7 can be used.
+def UNet(configs : dict):
+    enc_filters = configs['encoder_filters']
+    dec_filters = configs['decoder_filters']
+    batchnorm = configs['batchnorm']
+    l2_reg = configs['l2_reg']
 
-    Parameters
-    ----------
-    configs : dict
-        Input configs provided by the user
-    
-    Returns
-    -------
-    outputs (x) : list of tf.Tensors
-        Encoder output at various stages
-        Will be used for skip/dense connections in the decoder
-    """
-    
-    def __init__(self, configs : dict):
-        super().__init__()
+    # input
+    input = keras.Input(shape = configs['input_shape'], name = 'main_input')
 
-        # unpack configs into attributes
-        for key, value in configs.items():
-            setattr(self, key, value)
-        
-        if self.encoder_name == 'UNet':
-            self.encoder_stages = ["conv_block_00", "conv_block_10", "conv_block_20", "conv_block_30", "conv_block_40"]
-            # define layers at each row (only 1 node per row)
-            self._layers = []
-            for idx, filters in enumerate(self.encoder_filters):
-                name_idx = f'{idx}0'
-                # add conv layer
-                self._layers.append(ConvBlock(filters, self.batchnorm, self.l2_reg, name = 'conv_block_'+name_idx))
-                # add pool layer
-                self._layers.append(MaxPooling2D(pool_size=2, name = 'pool_'+name_idx))
-            # remove last pool layer
-            self._layers.pop(-1)
-        elif self.encoder_name == 'EfficientNetB7':
-            self.encoder_stages = ["stem_activation", "block2g_add", "block3g_add", "block5j_add", "block7d_add"]
-            backbone = EfficientNetB7(
-                include_top  = False,
-                weights      = 'imagenet',
-                input_shape  = self.input_shape)
-            self.backbone = self.load_pretrained_backbone(backbone) 
+    # encoder
+    conv_00 = ConvBlock(enc_filters[0], batchnorm, l2_reg, name = 'conv_block_00')(input)
+    pool_00 = MaxPooling2D(pool_size = 2 , name = 'pool_00')(conv_00)
 
-    def load_pretrained_backbone(self, backbone):
-        """
-        Instantiate backbone by connecting inputs and outputs
-        """
-        backbone_outputs = [backbone.get_layer(stage).output for stage in self.encoder_stages]
-        return tf.keras.Model(inputs = backbone.input, outputs = backbone_outputs)
-      
-    def call(self, inputs):
-        x = inputs
-        if self.encoder_name == 'UNet':
-            outputs = {}
-            for _layer in self._layers:
-                x = _layer(x)
-                outputs.update({_layer.name : x})
-            return [outputs[stage] for stage in self.encoder_stages]
-        elif self.encoder_name == 'EfficientNetB7':
-            return self.backbone(x)
+    conv_10 = ConvBlock(enc_filters[1], batchnorm, l2_reg, name = 'conv_block_10')(pool_00)
+    pool_10 = MaxPooling2D(pool_size = 2 , name = 'pool_10')(conv_10)
+
+    conv_20 = ConvBlock(enc_filters[2], batchnorm, l2_reg, name = 'conv_block_20')(pool_10)
+    pool_20 = MaxPooling2D(pool_size = 2 , name = 'pool_20')(conv_20)
+
+    conv_30 = ConvBlock(enc_filters[3], batchnorm, l2_reg, name = 'conv_block_30')(pool_20)
+    pool_30 = MaxPooling2D(pool_size = 2 , name = 'pool_30')(conv_30)
+
+    conv_40 = ConvBlock(enc_filters[4], batchnorm, l2_reg, name = 'conv_block_40')(pool_30)
+
+    # decoder
+    up_31 = UpsampleUnit(dec_filters[0], batchnorm, l2_reg, name='upsample_31')(conv_40)
+    cat_31 = Concatenate(name='cat_31')([up_31, conv_30])
+    conv_31 = ConvBlock(dec_filters[0], batchnorm, l2_reg, name = 'conv_block_31')(cat_31)
+
+    up_22 = UpsampleUnit(dec_filters[1], batchnorm, l2_reg, name='upsample_22')(conv_31)
+    cat_22 = Concatenate(name='cat_22')([up_22, conv_20])
+    conv_22 = ConvBlock(dec_filters[1], batchnorm, l2_reg, name = 'conv_block_22')(cat_22)
+
+    up_13 = UpsampleUnit(dec_filters[2], batchnorm, l2_reg, name='upsample_13')(conv_22)
+    cat_13 = Concatenate(name='cat_13')([up_13, conv_10])
+    conv_13 = ConvBlock(dec_filters[2], batchnorm, l2_reg, name = 'conv_block_13')(cat_13)
+
+    up_04 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_04')(conv_13)
+    cat_04 = Concatenate(name='cat_04')([up_04, conv_00])
+    conv_04 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_04')(cat_04)
+
+    # final layer
+    sigmoid = Conv2D(1, 1, activation='sigmoid', name='main_output', kernel_initializer='he_normal', padding='same', kernel_regularizer=l2(l2_reg))(conv_04)
+
+    return keras.Model(inputs = input, outputs = sigmoid, name = 'UNet')
 
 
-class Decoder(tf.keras.Model):
-    """
-    This represents the decoder of the UNet Model. Either U-Net or U-Net++ can be used.
+def EffUNet(configs : dict):
+    enc_stages = ["stem_activation", "block2g_add", "block3g_add", "block5j_add", "block7d_add"]
+    dec_filters = configs['decoder_filters']
+    batchnorm = configs['batchnorm']
+    l2_reg = configs['l2_reg']
 
-    Parameters
-    ----------
-    configs : dict
-        Input configs provided by the user
-    
-    Returns
-    -------
-    output (x) : tf.Tensor
-        Final prediction of the model
-        Designates end of forward pass
-    """
+    # input
+    input = keras.Input(shape = configs['input_shape'], name = 'main_input')
 
-    def __init__(self, configs : dict):
-        super().__init__()
+    # encoder
+    backbone = EfficientNetB7(
+        include_top = False,
+        weights = 'imagenet',
+        input_tensor = input)
 
-        # unpack configs into attributes
-        for key, value in configs.items():
-            setattr(self, key, value)
+    for layer in backbone.layers:
+        layer.trainable = not configs['freeze_backbone']
 
-        # decoder specific layer orders
-        self.rows = []
-        if self.decoder_name == 'UNet':
-            # only need one set of layers per row (1 node per layer)
-            for row in range(4):
-                name_idx = f'{3-row}{row+1}'
-                filters = self.decoder_filters[row]
-                _layers = [UpsampleUnit(filters, self.batchnorm, self.l2_reg, name='upsample_'+name_idx),
-                          Concatenate(name='cat_'+name_idx),
-                          ConvBlock(filters, batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_'+name_idx)]
-                self.rows.append(_layers)
-        elif self.decoder_name == 'UNet++':
-            # each row has a different number of nodes and each node has an upsample, concatenate, and convolution layer
-            for row in range(4):
-                nodes = []
-                for node in range(row+1):
-                    name_idx = f'{3-row}{node+1}'
-                    filters = self.decoder_filters[row]
-                    _layers = [UpsampleUnit(filters, self.batchnorm, self.l2_reg, name='upsample_'+name_idx),
-                              Concatenate(name='cat_'+name_idx),
-                              ConvBlock(filters, batchnorm=self.batchnorm, l2_reg=self.l2_reg, name='conv_block_'+name_idx)]
-                    nodes.append(_layers)
-                self.rows.append(nodes)
+    backbone_outputs = [backbone.get_layer(stage).output for stage in enc_stages]
+    encoder = tf.keras.Model(inputs = input, outputs = backbone_outputs)
+    enc_outputs = encoder.output
 
-        # final layers
-        if self.encoder_name == 'EfficientNetB7':
-            self.up_out = UpsampleUnit(self.decoder_filters[4], self.batchnorm, self.l2_reg, name='upsample_out')
-        self.sigmoid = Conv2D(1, 1, activation='sigmoid', name='output', kernel_initializer='he_normal', padding='same', kernel_regularizer=l2(self.l2_reg))
+    # decoder
+    up_31 = UpsampleUnit(dec_filters[0], batchnorm, l2_reg, name='upsample_31')(enc_outputs[4])
+    cat_31 = Concatenate(name='cat_31')([up_31, enc_outputs[3]])
+    conv_31 = ConvBlock(dec_filters[0], batchnorm, l2_reg, name = 'conv_block_31')(cat_31)
 
-    def call(self, enc_outputs):
-        # starting from head of encoder
-        enc_outputs.reverse()
+    up_22 = UpsampleUnit(dec_filters[1], batchnorm, l2_reg, name='upsample_22')(conv_31)
+    cat_22 = Concatenate(name='cat_22')([up_22, enc_outputs[2]])
+    conv_22 = ConvBlock(dec_filters[1], batchnorm, l2_reg, name = 'conv_block_22')(cat_22)
 
-        if self.decoder_name == 'UNet':
-            z = enc_outputs[0]
-            for row, _layers in enumerate(self.rows):
-                x = _layers[0](z) # upsample
-                y = _layers[1]([x, enc_outputs[row+1]]) # concatenate
-                z = _layers[2](y) # convolution
-        elif self.decoder_name == 'UNet++':
-            # update previous row outs with previous encoder out and convolutions (for upsampling)
-            prev_row_outs = [enc_outputs[0]]
-            for row, nodes in enumerate(self.rows):
-                # update current row outs with current encoder out and convolutions from the left (for concatenation)
-                current_row_outs = [enc_outputs[row+1]]
-                for node, _layers in enumerate(nodes):
-                    x = _layers[0](prev_row_outs[node]) # upsample
-                    y = _layers[1]([x] + current_row_outs[:(node+1)]) # concatenate
-                    z = _layers[2](y) # convolution
-                    current_row_outs.append(z)
-                prev_row_outs = current_row_outs # reset prev row outs
-            z = current_row_outs[-1]
+    up_13 = UpsampleUnit(dec_filters[2], batchnorm, l2_reg, name='upsample_13')(conv_22)
+    cat_13 = Concatenate(name='cat_13')([up_13, enc_outputs[1]])
+    conv_13 = ConvBlock(dec_filters[2], batchnorm, l2_reg, name = 'conv_block_13')(cat_13)
 
-        if self.encoder_name == 'EfficientNetB7':
-            # need an extra upsample due to EfficientNet stem halving resolution
-            z = self.up_out(z)
-        return self.sigmoid(z)
+    up_04 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_04')(conv_13)
+    cat_04 = Concatenate(name='cat_04')([up_04, enc_outputs[0]])
+    conv_04 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_04')(cat_04)
+
+    # final layers
+    up_final = UpsampleUnit(dec_filters[4], batchnorm, l2_reg, name = 'upsample_final')(conv_04)
+    sigmoid = Conv2D(1, 1, activation='sigmoid', name='main_output', kernel_initializer='he_normal', padding='same', kernel_regularizer=l2(l2_reg))(up_final)
+
+    return keras.Model(inputs=input, outputs=sigmoid, name = 'Eff-UNet')
 
 
-class UNet(tf.keras.Model):
-    """
-    This is the fulle U-Net model with the encoder and decoder connected.
+def UNetPP(configs : dict):
+    enc_filters = configs['encoder_filters']
+    dec_filters = configs['decoder_filters']
+    batchnorm = configs['batchnorm']
+    l2_reg = configs['l2_reg']
 
-    Parameters
-    ----------
-    configs : dict
-        Input configs provided by the user
-    
-    Returns
-    -------
-    output (x) : tf.Tensor
-        Final prediction of the model from decoder
-    """
-    
-    def __init__(self, configs : dict):
-        super().__init__()
+    # input
+    input = keras.Input(shape = configs['input_shape'], name = 'main_input')
 
-        for key, value in configs.items():
-            setattr(self, key, value)
-        
-        # instantiate encoder and decoder
-        self.encoder = Encoder(configs)
-        self.decoder = Decoder(configs)
+    # encoder
+    conv_00 = ConvBlock(enc_filters[0], batchnorm, l2_reg, name = 'conv_block_00')(input)
+    pool_00 = MaxPooling2D(pool_size =2 , name = 'pool_00')(conv_00)
 
-    def call(self, inputs):
-        x = self.encoder(inputs)            
-        return self.decoder(x)
+    conv_10 = ConvBlock(enc_filters[1], batchnorm, l2_reg, name = 'conv_block_10')(pool_00)
+    pool_10 = MaxPooling2D(pool_size =2 , name = 'pool_10')(conv_10)
+
+    conv_20 = ConvBlock(enc_filters[2], batchnorm, l2_reg, name = 'conv_block_20')(pool_10)
+    pool_20 = MaxPooling2D(pool_size =2 , name = 'pool_20')(conv_20)
+
+    conv_30 = ConvBlock(enc_filters[3], batchnorm, l2_reg, name = 'conv_block_30')(pool_20)
+    pool_30 = MaxPooling2D(pool_size =2 , name = 'pool_30')(conv_30)
+
+    conv_40 = ConvBlock(enc_filters[4], batchnorm, l2_reg, name = 'conv_block_40')(pool_30)
+
+    # decoder
+    up_31 = UpsampleUnit(dec_filters[0], batchnorm, l2_reg, name='upsample_31')(conv_40)
+    cat_31 = Concatenate(name='cat_31')([up_31, conv_30])
+    conv_31 = ConvBlock(dec_filters[0], batchnorm, l2_reg, name = 'conv_block_31')(cat_31)
+
+
+    up_21 = UpsampleUnit(dec_filters[1], batchnorm, l2_reg, name='upsample_21')(conv_30)
+    cat_21 = Concatenate(name='cat_21')([up_21, conv_20])
+    conv_21 = ConvBlock(dec_filters[1], batchnorm, l2_reg, name = 'conv_block_21')(cat_21)
+
+    up_22 = UpsampleUnit(dec_filters[1], batchnorm, l2_reg, name='upsample_22')(conv_31)
+    cat_22 = Concatenate(name='cat_22')([up_22, conv_20, conv_21])
+    conv_22 = ConvBlock(dec_filters[1], batchnorm, l2_reg, name = 'conv_block_22')(cat_22)
+
+
+    up_11 = UpsampleUnit(dec_filters[2], batchnorm, l2_reg, name='upsample_11')(conv_20)
+    cat_11 = Concatenate(name='cat_11')([up_11, conv_10])
+    conv_11 = ConvBlock(dec_filters[2], batchnorm, l2_reg, name = 'conv_block_11')(cat_11)
+
+    up_12 = UpsampleUnit(dec_filters[2], batchnorm, l2_reg, name='upsample_12')(conv_21)
+    cat_12 = Concatenate(name='cat_12')([up_12, conv_10, conv_11])
+    conv_12 = ConvBlock(dec_filters[2], batchnorm, l2_reg, name = 'conv_block_12')(cat_12)
+
+    up_13 = UpsampleUnit(dec_filters[2], batchnorm, l2_reg, name='upsample_13')(conv_22)
+    cat_13 = Concatenate(name='cat_13')([up_13, conv_10, conv_11, conv_12])
+    conv_13 = ConvBlock(dec_filters[2], batchnorm, l2_reg, name = 'conv_block_13')(cat_13)
+
+
+    up_01 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_01')(conv_10)
+    cat_01 = Concatenate(name='cat_01')([up_01, conv_00])
+    conv_01 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_01')(cat_01)
+
+    up_02 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_02')(conv_11)
+    cat_02 = Concatenate(name='cat_02')([up_02, conv_00, conv_01])
+    conv_02 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_02')(cat_02)
+
+    up_03 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_03')(conv_12)
+    cat_03 = Concatenate(name='cat_03')([up_03, conv_00, conv_01, conv_02])
+    conv_03 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_03')(cat_03)
+
+    up_04 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_04')(conv_13)
+    cat_04 = Concatenate(name='cat_04')([up_04, conv_00, conv_01, conv_02, conv_03])
+    conv_04 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_04')(cat_04)
+
+    # final layer
+    sigmoid = Conv2D(1, 1, activation='sigmoid', name='main_output', kernel_initializer='he_normal', padding='same', kernel_regularizer=l2(l2_reg))(conv_04)
+
+    return keras.Model(inputs = input, outputs = sigmoid, name = 'UNetpp')
+
+
+def EffUNetPP(configs : dict):
+    enc_stages = ["stem_activation", "block2g_add", "block3g_add", "block5j_add", "block7d_add"]
+    dec_filters = configs['decoder_filters']
+    batchnorm = configs['batchnorm']
+    l2_reg = configs['l2_reg']
+
+    # input
+    input = keras.Input(shape = configs['input_shape'], name = 'main_input')
+
+    # encoder
+    backbone = EfficientNetB7(
+        include_top = False,
+        weights = 'imagenet',
+        input_tensor = input)
+
+    for layer in backbone.layers:
+        layer.trainable = not configs['freeze_backbone']
+
+    backbone_outputs = [backbone.get_layer(stage).output for stage in enc_stages]
+    encoder = tf.keras.Model(inputs = input, outputs = backbone_outputs)
+    enc_outputs = encoder.output
+
+    # decoder
+    up_31 = UpsampleUnit(dec_filters[0], batchnorm, l2_reg, name='upsample_31')(enc_outputs[4])
+    cat_31 = Concatenate(name='cat_31')([up_31, enc_outputs[3]])
+    conv_31 = ConvBlock(dec_filters[0], batchnorm, l2_reg, name = 'conv_block_31')(cat_31)
+
+
+    up_21 = UpsampleUnit(dec_filters[1], batchnorm, l2_reg, name='upsample_21')(enc_outputs[3])
+    cat_21 = Concatenate(name='cat_21')([up_21, enc_outputs[2]])
+    conv_21 = ConvBlock(dec_filters[1], batchnorm, l2_reg, name = 'conv_block_21')(cat_21)
+
+    up_22 = UpsampleUnit(dec_filters[1], batchnorm, l2_reg, name='upsample_22')(conv_31)
+    cat_22 = Concatenate(name='cat_22')([up_22, enc_outputs[2], conv_21])
+    conv_22 = ConvBlock(dec_filters[1], batchnorm, l2_reg, name = 'conv_block_22')(cat_22)
+
+
+    up_11 = UpsampleUnit(dec_filters[2], batchnorm, l2_reg, name='upsample_11')(enc_outputs[2])
+    cat_11 = Concatenate(name='cat_11')([up_11, enc_outputs[1]])
+    conv_11 = ConvBlock(dec_filters[2], batchnorm, l2_reg, name = 'conv_block_11')(cat_11)
+
+    up_12 = UpsampleUnit(dec_filters[2], batchnorm, l2_reg, name='upsample_12')(conv_21)
+    cat_12 = Concatenate(name='cat_12')([up_12, enc_outputs[1], conv_11])
+    conv_12 = ConvBlock(dec_filters[2], batchnorm, l2_reg, name = 'conv_block_12')(cat_12)
+
+    up_13 = UpsampleUnit(dec_filters[2], batchnorm, l2_reg, name='upsample_13')(conv_22)
+    cat_13 = Concatenate(name='cat_13')([up_13, enc_outputs[1], conv_11, conv_12])
+    conv_13 = ConvBlock(dec_filters[2], batchnorm, l2_reg, name = 'conv_block_13')(cat_13)
+
+
+    up_01 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_01')(enc_outputs[1])
+    cat_01 = Concatenate(name='cat_01')([up_01, enc_outputs[0]])
+    conv_01 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_01')(cat_01)
+
+    up_02 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_02')(conv_11)
+    cat_02 = Concatenate(name='cat_02')([up_02, enc_outputs[0], conv_01])
+    conv_02 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_02')(cat_02)
+
+    up_03 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_03')(conv_12)
+    cat_03 = Concatenate(name='cat_03')([up_03, enc_outputs[0], conv_01, conv_02])
+    conv_03 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_03')(cat_03)
+
+    up_04 = UpsampleUnit(dec_filters[3], batchnorm, l2_reg, name='upsample_04')(conv_13)
+    cat_04 = Concatenate(name='cat_04')([up_04, enc_outputs[0], conv_01, conv_02, conv_03])
+    conv_04 = ConvBlock(dec_filters[3], batchnorm, l2_reg, name = 'conv_block_04')(cat_04)
+
+    # final layers
+    up_final = UpsampleUnit(dec_filters[4], batchnorm, l2_reg, name = 'upsample_final')(conv_04)
+    sigmoid = Conv2D(1, 1, activation='sigmoid', name='main_output', kernel_initializer='he_normal', padding='same', kernel_regularizer=l2(l2_reg))(up_final)
+
+    return keras.Model(inputs=input, outputs=sigmoid, name = 'Eff-UNetpp')
+
+
+def get_model(configs : dict):
+    if configs['encoder_name'] == 'UNet':
+        if configs['decoder_name'] == 'UNet':
+            return UNet(configs)
+        elif configs['decoder_name'] == 'UNet++':
+            return UNetPP(configs)
+    elif configs['encoder_name'] == 'EfficientNetB7':
+        if configs['decoder_name'] == 'UNet':
+            return EffUNet(configs)
+        elif configs['decoder_name'] == 'UNet++':
+            return EffUNetPP(configs)
