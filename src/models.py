@@ -72,8 +72,14 @@ def EffUNet(configs : dict):
         weights = 'imagenet',
         input_tensor = input)
 
-    for layer in backbone.layers:
-        layer.trainable = not configs['freeze_backbone']
+    # freeze entire backbone or just batchnorm layers
+    if configs['freeze_backbone']:
+        for layer in backbone.layers:
+            layer.trainable = False
+    else:
+        for layer in backbone.layers:
+            if isinstance(layer, tf.keras.layers.BatchNormalization):
+                layer.trainable = False
 
     backbone_outputs = [backbone.get_layer(stage).output for stage in enc_stages]
     encoder = tf.keras.Model(inputs = input, outputs = backbone_outputs)
@@ -192,8 +198,14 @@ def EffUNetPP(configs : dict):
         weights = 'imagenet',
         input_tensor = input)
 
-    for layer in backbone.layers:
-        layer.trainable = not configs['freeze_backbone']
+    # freeze entire backbone or just batchnorm layers
+    if configs['freeze_backbone']:
+        for layer in backbone.layers:
+            layer.trainable = False
+    else:
+        for layer in backbone.layers:
+            if isinstance(layer, tf.keras.layers.BatchNormalization):
+                layer.trainable = False
 
     backbone_outputs = [backbone.get_layer(stage).output for stage in enc_stages]
     encoder = tf.keras.Model(inputs = input, outputs = backbone_outputs)
