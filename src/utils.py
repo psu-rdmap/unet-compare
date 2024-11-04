@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 from natsort import os_sorted
+from glob import glob
 
 
 def inference(configs : dict, model : tf.keras.Model):
@@ -176,19 +177,19 @@ def cv_plot_results(configs : dict):
     """
 
     # paths
-    results_path = os.path.join(configs['root'], configs['results'])
+    results_path = configs['results']
     loss_save_path = os.path.join(results_path, 'loss.png')
     metrics_save_path = os.path.join(results_path, 'metrics.png')
 
     # get fold directory names and sort them using natural sorting
-    fold_dirs = os.listdir(results_path)
+    fold_dirs = glob(os.path.join(results_path, 'fold_*/'))
     fold_dirs = os_sorted(fold_dirs)
 
     # dict to hold dataframes for each fold
     all_metrics = []
     for fold in range(len(fold_dirs)):
         # get metrics from csv
-        fold_metrics = pd.read_csv(os.path.join(results_path, fold_dirs[fold], 'metrics.csv'))
+        fold_metrics = pd.read_csv(os.path.join(fold_dirs[fold], 'metrics.csv'))
 
         # add f1 columns to the dataframe
         fold_metrics['f1'] = add_f1(fold_metrics)

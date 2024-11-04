@@ -37,11 +37,19 @@ def single_loop(configs : dict):
     print('Validation images:', configs['val'])
 
     # get model
-    print('\nFetching and compiling model...')
+    print('\nBuilding model...')
     time.sleep(0.5)
     model = models.get_model(configs)
 
+    # load weights if necessary
+    if configs['weights_path']:
+        print('\nLoading checkpoint...')
+        time.sleep(0.5)
+        model.load_weights(configs['weights_path'])
+
     # training settings
+    print('\nCompiling model...')
+    time.sleep(0.5)
     model.compile(
         optimizer = Adam(learning_rate=configs['learning_rate']),
         loss = 'binary_crossentropy',
@@ -124,7 +132,7 @@ def cross_val_loop(configs : dict):
         results_dir = 'fold_' + str(fold+1)
         results_dir = join(configs['results'], results_dir)
         configs.update({'results' : results_dir})
-        mkdir(join(configs['root'], results_dir))
+        mkdir(results_dir)
         
         print()
         print('-'*20 + ' Fold {} '.format(fold+1) + '-'*20)
@@ -166,14 +174,14 @@ def inference_loop(configs : dict):
     images = list(images)
 
     # build model and load weights
-    print('\nFetching model and loading weights...')
+    print('\nBuilding model and loading weights...')
     time.sleep(1)
     model = models.UNet(configs)
-    model.load_weights(join(configs['root'], configs['weights_path']))
+    model.load_weights(configs['weights_path'])
 
     # create predictions for each image
     print('\nGenerating predictions and saving them...\n')
-    save_path = join(configs['root'], configs['results'])
+    save_path = configs['results']
 
     for i in range(len(fns)):
         pred = model(images[i], training=False)
