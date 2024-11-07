@@ -45,10 +45,12 @@ def main():
         checkers.cross_val(configs)
         print_input(configs)
         loops.cross_val_loop(configs)
+
     elif configs['training_loop'] == 'Inference':
         checkers.inference(configs)
         print_input(configs)
         loops.inference_loop(configs)
+
     elif configs['training_loop'] == 'Single':
         checkers.single(configs)
         print_input(configs)

@@ -16,6 +16,7 @@ random.seed(229)
 AUTOTUNE = tf.data.AUTOTUNE
 tf.random.set_seed(3051)
 
+
 def create_dataset(configs : dict) -> tuple[dict, int, int]:
     """
     Create the training dataset and return a Tensorflow Dataset instance of it
@@ -320,38 +321,6 @@ def get_ds_stats(dataset : tf.data.Dataset) -> tuple[tf.Tensor, tf.Tensor]:
     std /= img_count
 
     return mean, std
-
-
-def parse_inference_image(img_path : str, configs : dict) -> np.ndarray:
-    """
-    Load each image for inference as numpy arrays and pre-process them
-
-    Parameters
-    ----------
-    img_path : str
-        Absolute path to each inference image
-    configs : dict
-        Input configs provided by the user
-    
-    Returns
-    -------
-    Image : numpy.ndarray
-        A single normalized loaded image 
-    """
-     
-    # read image and load it into 3 channels (pre-trained backbones require 3)
-    image = cv2.imread(img_path, cv2.IMREAD_COLOR)
-
-    # resize image
-    resize_shape = configs['input_shape'][:2]
-    image = cv2.resize(image, resize_shape, interpolation = cv2.INTER_LANCZOS4)
-
-    # convert image to floats and normalize images ([0,255] -> [0.0, 1.0])
-    image = image.astype('float32') / 255.0
-    image = np.expand_dims(image, axis=0)
-
-    # return two Tensor objects with loaded image and annotation data
-    return image
 
 
 def split_data(configs : dict) -> dict:

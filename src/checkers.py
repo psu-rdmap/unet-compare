@@ -45,8 +45,10 @@ def general(configs : dict):
 
 
     # vanilla UNet encoder needs filter numbers
-    if configs['encoder_name'] == 'UNet':
-        assert 'encoder_filters' in configs, 'encoder_filters must be provided if training the UNet encoder'
+    if 'encoder_filters' not in configs:
+        assert configs['encoder_name'] == 'EfficientNetB7'
+        configs.update({'encoder_filters' : None})
+    else:
         assert type(configs['encoder_filters']) == list, 'encoder_filters must be an array of 5 positive integers'
         assert len(configs['encoder_filters']) == 5, 'encoder_filters must have 5 integers'
         assert all([type(filters) == int for filters in configs['encoder_filters']]), 'encoder_filters must be integers'
@@ -230,13 +232,13 @@ def single(configs : dict):
         assert all([val_fn not in configs['train'] for val_fn in configs['val']]), 'Validation filename detected in training set'
 
 
-    if 'weights_path' in configs:
-        assert type(configs['weights_path']) == str, 'If training from a checkpoint, weights_path must be a path like string to the weights file. It should be relative to root'
-        weights_path = os.path.join(configs['root'], configs['weights_path'])
-        assert os.path.exists(weights_path), 'Weights file does not exist at {}'.format(weights_path)
-        configs['weights_path'] = weights_path
+    if 'model_path' in configs:
+        assert type(configs['model_path']) == str, 'If continuing training from a previous model, model_path must be a path like string to the model .keras file. It should be relative to root'
+        model_path = os.path.join(configs['root'], configs['model_path'])
+        assert os.path.exists(model_path), 'Weights file does not exist at {}'.format(model_path)
+        configs['model_path'] = model_path
     else:
-        configs.update({'weights_path' : False})
+        configs.update({'model_path' : None})
             
 
 def cross_val(configs : dict):
@@ -281,7 +283,7 @@ def cross_val(configs : dict):
 
 def inference(configs : dict):
     """
-    Checks for weights/checkpoint file
+    Checks for model file
 
     Parameters
     ----------
@@ -293,10 +295,10 @@ def inference(configs : dict):
     Updated configs : dict
     """
 
-    if 'weights_path' not in configs:
-        raise KeyError('No path to weights provided')
+    if 'model_path' not in configs:
+        raise KeyError('model_path not provided. It must be a path like string to the model file relative to root')
     else:
-        assert type(configs['weights_path']) == str, 'weights_path must be a path like string to the weights file. It should be relative to root'
-        weights_path = os.path.join(configs['root'], configs['weights_path'])
-        assert os.path.exists(weights_path), 'Weights file does not exist at {}'.format(weights_path) 
-        configs['weights_path'] = weights_path 
+        assert type(configs['model_path']) == str, 'model_path must be a path like string to the .keras model file. It should be relative to root'
+        model_path = os.path.join(configs['root'], configs['model_path'])
+        assert os.path.exists(model_path), 'Weights file does not exist at {}'.format(model_path) 
+        configs['model_path'] = model_path 

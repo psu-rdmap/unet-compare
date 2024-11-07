@@ -1,16 +1,16 @@
 """
-This module handles the actual training/inference process
+This module handles the training/inference process
 """
 
 import models
 import dataloader
+import utils
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
 from os import mkdir, listdir
 from os.path import join, split
 import time
-from utils import inference, plot_results, create_folds, cv_plot_results
 import shutil
 from keras import backend as K
 import gc
@@ -37,37 +37,22 @@ def single_loop(configs : dict):
     print('Validation images:', configs['val'])
 
     # get model
-    print('\nBuilding model...')
+    print('\nLoading model...')
     time.sleep(0.5)
-    model = models.get_model(configs)
-
-    # load weights if necessary
-    if configs['weights_path']:
-        print('\nLoading checkpoint...')
-        time.sleep(0.5)
-        model.load_weights(configs['weights_path'])
+    if configs['model_path'] is not None:
+        model = keras.load_model(configs['model_path'])
+    else:
+        model = models.UNet(configs)      
 
     # training settings
     print('\nCompiling model...')
     time.sleep(0.5)
     model.compile(
-        optimizer = Adam(learning_rate=configs['learning_rate']),
-        loss = 'binary_crossentropy',
-        metrics = ['accuracy', 'Precision', 'Recall']
-    )
+        optimizer = Adam(learning_rate=configs['learning_rate']), loss = 'binary_crossentropy', metrics = ['accuracy', 'Precision', 'Recall'])
     
     callbacks = [
-        CSVLogger(
-            join(configs['results'], 'metrics.csv'), 
-            separator=',', 
-            append=False
-        ),
-        ModelCheckpoint(
-            join(configs['results'], 'model.weights.h5'), 
-            verbose=1, 
-            save_best_only=configs['save_best_only'], 
-            save_weights_only=True
-        )
+        CSVLogger(join(configs['results'], 'metrics.csv'), separator=',', append=False),
+        ModelCheckpoint(join(configs['results'], 'best.model.keras'), verbose=1, save_best_only=configs['save_best_only'], save_weights_only=False)
     ]
     if configs['early_stopping']:
         callbacks.append(EarlyStopping(patience = configs['patience']))
@@ -84,17 +69,17 @@ def single_loop(configs : dict):
         verbose=2 # 1 = live progress bar, 2 = one line per epoch
     )
 
-    # load weights corresponding to minimum val loss
+    # load model corresponding to minimum val loss
     if configs['save_best_only']:
-        model.load_weights(join(configs['results'], 'model.weights.h5'))
+        model = keras.load_model(join(configs['results'], 'best.model.keras'))
 
     # inferences train/val sets and save results into results
     print('\nInferencing image sets...')
-    inference(configs, model)
+    utils.inference_ds(configs, model)
 
     # plot loss, precision, recall, and f1
     print('\nPlotting metrics...')
-    plot_results(configs)
+    utils.plot_results(configs)
 
     # remove training dataset and clear memory
     print('\nCleaning up...')
@@ -117,7 +102,7 @@ def cross_val_loop(configs : dict):
     """
     
     # determine all training and val set combinations given the number of folds
-    train_sets, val_sets = create_folds(configs['train'], configs['num_folds'])
+    train_sets, val_sets = utils.create_folds(configs['train'], configs['num_folds'])
     
     # save original results directory
     top_level_results = configs['results']
@@ -135,7 +120,7 @@ def cross_val_loop(configs : dict):
         mkdir(results_dir)
         
         print()
-        print('-'*20 + ' Fold {} '.format(fold+1) + '-'*20)
+        print('-'*30 + ' Fold {} '.format(fold+1) + '-'*30)
 
         # train fold
         single_loop(configs)
@@ -146,7 +131,7 @@ def cross_val_loop(configs : dict):
     # plot metrics over all folds
     print('\nPlotting CV Metrics...')
     time.sleep(1)
-    cv_plot_results(configs)
+    utils.cv_plot_results(configs)
 
     print('\nDone.')
 
@@ -164,29 +149,24 @@ def inference_loop(configs : dict):
     print('Loading images...')
     time.sleep(2)
 
-    # define path to images
+    # define path to images and retrieve filenames
     data_path = join(configs['root'], 'data/', configs['dataset_prefix'])
-    fns = glob(data_path + '/*')
+    ds_fns = listdir(data_path)
 
-    # replace fns with loaded numpy arrays
-    images = fns.copy()
-    images = map(lambda x: dataloader.parse_inference_image(x, configs), images)
-    images = list(images)
+    # create tensorflow ds
+    ds = [join(data_path, fn) for fn in ds_fns]
+    ds = tf.data.Dataset.from_tensor_slices(ds)
+    ds = ds.map(utils.parse_inference_image)
 
     # build model and load weights
-    print('\nBuilding model and loading weights...')
+    print('\nLoading model...')
     time.sleep(1)
-    model = models.UNet(configs)
-    model.load_weights(configs['weights_path'])
+    model = keras.load_model(configs['model_path'])
 
-    # create predictions for each image
+    # create and save predictions
     print('\nGenerating predictions and saving them...\n')
-    save_path = configs['results']
-
-    for i in range(len(fns)):
-        pred = model(images[i], training=False)
-        pred = tf.squeeze(pred, axis=0) # drop batch dimension
-        fn_ext = split(fns[i])[1] 
-        keras.utils.save_img(join(save_path, fn_ext), pred)
+    preds = model.predict(ds)
+    save_fns = [join(configs['results'], split(fn)[0], '.png') for fn in ds_fns]
+    utils.save_preds(preds, save_fns)
 
     print('\nDone.')

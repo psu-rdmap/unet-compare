@@ -13,7 +13,45 @@ from natsort import os_sorted
 from glob import glob
 
 
-def inference(configs : dict, model : tf.keras.Model):
+def parse_inference_image(img_path : str) -> tf.Tensor:
+    """
+    Given the full path to an image (/path/to/image.ext), load it into a tensor
+
+    Parameters
+    ----------
+    img_path : str
+        Full path to image file
+    
+    Returns
+    -------
+    Loaded image : tf.Tensor
+    """
+
+    # read image and load it into 3 channels (pre-trained backbones require 3)
+    image = tf.io.read_file(img_path)
+    image = tf.image.decode_png(image, channels=3)
+
+    # convert tensor objects to floats and normalize images ([0,255] -> [0.0, 1.0]) and return tensor
+    return tf.cast(image, tf.float32) / 255.0
+
+
+def save_preds(preds : tf.Tensor, save_fns : list):
+    """
+    Save each prediction from a tensor of predictions
+
+    Parameters
+    ----------
+    preds : tf.Tensor
+        Tensor of predictions with shape (N, H, W, 1) where N is the number of predictions
+    save_fns : list
+        List of corresponding image filenames
+    """
+    
+    for idx, pred in enumerate(preds):
+        save_img(save_fns[idx], pred)
+
+
+def inference_ds(configs : dict, model : tf.keras.Model):
     """
     Inferences and saves every training/validation image after training
     
@@ -25,57 +63,36 @@ def inference(configs : dict, model : tf.keras.Model):
         Trained neural network
     """
 
-    # base image source
-    img_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
-    
-    # train and val save destinations
-    train_save_path = os.path.join(configs['root'], configs['results'], 'train_preds/')
-    val_save_path = os.path.join(configs['root'], configs['results'], 'val_preds/')
-    os.mkdir(train_save_path)
-    os.mkdir(val_save_path)
+    data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
 
-    # inference train images
-    for fn in configs['train']:
-        img_full_path = os.path.join(img_path, fn + configs['image_ext'])
-        inference_single_image(img_full_path, model, train_save_path)
+    # define training and validation dataset
+    train_ds = tf.data.Dataset.from_tensor_slices([data_path + img + configs['image_ext'] for img in configs['train']])
+    val_ds = tf.data.Dataset.from_tensor_slices([data_path + img + configs['image_ext'] for img in configs['val']])
 
-    # inference val images
-    for fn in configs['val']:
-        img_full_path = os.path.join(img_path, fn + configs['image_ext'])
-        inference_single_image(img_full_path, model, val_save_path)
+    # replace every image path in the training and validation directories with a loaded image and annotation pair
+    train_ds = train_ds.map(parse_inference_image)
+    val_ds = val_ds.map(parse_inference_image)
 
+    # batch data
+    train_ds = train_ds.batch(1)
+    val_ds = val_ds.batch(1)
 
-def inference_single_image(img_full_path : str, model : tf.keras.Model, img_save_path : str):
-    """
-    Loads, inferences, and saves an image with the given path
-    
-    Parameters
-    ----------
-    img_full_path : str
-        Absolute path to an image used in the training process
-    model : tf.keras.Model
-        Trained neural network
-    img_save_path : str
-        Absolute path to the save destination
-    """
+    # get predictions
+    train_preds = model.predict(train_ds, verbose=1)
+    val_preds = model.predict(val_ds, verbose=1)
 
-    
-    # get file path pieces
-    _, fn_ext = os.path.split(img_full_path)
-    fn, _ = os.path.splitext(fn_ext)
-    
-    # load image
-    img = tf.io.read_file(img_full_path)
-    img = tf.image.decode_png(img, channels=3)
-    img = tf.cast(img, tf.float32) / 255.0
-    img = tf.expand_dims(img, axis=0)
-    
-    # get prediction
-    pred = model(img, training=False)
+    # define output directories
+    train_save_dir = os.path.join(configs['results'], 'train_preds')
+    os.mkdir(train_save_dir)
+    train_save_fns = [os.path.join(train_save_dir, fn + '.png') for fn in configs['train']]
 
-    # save pred
-    pred_save_path = os.path.join(img_save_path, fn + '.png')
-    save_img(pred_save_path, tf.squeeze(pred, axis=0))
+    val_save_dir = os.path.join(configs['results'], 'val_preds')
+    os.mkdir(val_save_dir)
+    val_save_fns = [os.path.join(val_save_dir, fn + '.png') for fn in configs['val']]
+
+    # save train and val preds
+    save_preds(train_preds, train_save_fns)
+    save_preds(val_preds, val_save_fns)
 
 
 def plot_results(configs : dict):
@@ -89,9 +106,8 @@ def plot_results(configs : dict):
     """
 
     # paths
-    results_path = os.path.join(configs['root'], configs['results'])
-    metrics_path = os.path.join(results_path, 'metrics.csv')
-    plot_save_path = os.path.join(results_path, 'metrics.png')
+    metrics_path = os.path.join(configs['results'], 'metrics.csv')
+    plot_save_path = os.path.join(configs['results'], 'metrics.png')
 
     # read metrics into dataframe
     metrics = pd.read_csv(metrics_path)
@@ -177,12 +193,11 @@ def cv_plot_results(configs : dict):
     """
 
     # paths
-    results_path = configs['results']
-    loss_save_path = os.path.join(results_path, 'loss.png')
-    metrics_save_path = os.path.join(results_path, 'metrics.png')
+    loss_save_path = os.path.join(configs['results'], 'loss.png')
+    metrics_save_path = os.path.join(configs['results'], 'metrics.png')
 
     # get fold directory names and sort them using natural sorting
-    fold_dirs = glob(os.path.join(results_path, 'fold_*/'))
+    fold_dirs = glob(os.path.join(configs['results'], 'fold_*/'))
     fold_dirs = os_sorted(fold_dirs)
 
     # dict to hold dataframes for each fold
