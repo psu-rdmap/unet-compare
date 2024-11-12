@@ -42,13 +42,8 @@ def single_loop(configs : dict):
     if configs['model_path'] is not None:
         model = keras.load_model(configs['model_path'])
     else:
-        model = models.UNet(configs)      
-
-    # training settings
-    print('\nCompiling model...')
-    time.sleep(0.5)
-    model.compile(
-        optimizer = Adam(learning_rate=configs['learning_rate']), loss = 'binary_crossentropy', metrics = ['accuracy', 'Precision', 'Recall'])
+        model = models.UNet(configs)
+        model.compile(optimizer = Adam(learning_rate=configs['learning_rate']), loss = 'binary_crossentropy', metrics = ['accuracy', 'Precision', 'Recall'])
     
     callbacks = [
         CSVLogger(join(configs['results'], 'metrics.csv'), separator=',', append=False),
