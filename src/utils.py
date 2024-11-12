@@ -78,8 +78,8 @@ def inference_ds(configs : dict, model : tf.keras.Model):
     val_ds = val_ds.batch(1)
 
     # get predictions
-    train_preds = model.predict(train_ds, verbose=1)
-    val_preds = model.predict(val_ds, verbose=1)
+    train_preds = model.predict(train_ds, verbose=2)
+    val_preds = model.predict(val_ds, verbose=2)
 
     # define output directories
     train_save_dir = os.path.join(configs['results'], 'train_preds')
