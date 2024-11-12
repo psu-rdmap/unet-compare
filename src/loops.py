@@ -30,7 +30,7 @@ def single_loop(configs : dict):
     """
     
     # get dataset
-    print('Creating dataset...')
+    print('\nCreating dataset...')
     time.sleep(2)
     dataset, train_steps, val_steps = dataloader.create_dataset(configs)
     print('\nTraining images: ', configs['train'])
@@ -71,7 +71,7 @@ def single_loop(configs : dict):
 
     # load model corresponding to minimum val loss
     if configs['save_best_only']:
-        model = keras.load_model(join(configs['results'], 'best.model.keras'))
+        model = keras.saving.load_model(join(configs['results'], 'best.model.keras'))
 
     # inferences train/val sets and save results into results
     print('\nInferencing image sets...')
@@ -161,11 +161,11 @@ def inference_loop(configs : dict):
     # build model and load weights
     print('\nLoading model...')
     time.sleep(1)
-    model = keras.load_model(configs['model_path'])
+    model = keras.saving.load_model(configs['model_path'])
 
     # create and save predictions
     print('\nGenerating predictions and saving them...\n')
-    preds = model.predict(ds)
+    preds = model.predict(ds, verbose=2)
     save_fns = [join(configs['results'], split(fn)[0], '.png') for fn in ds_fns]
     utils.save_preds(preds, save_fns)
 
