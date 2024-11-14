@@ -201,7 +201,6 @@ def single(configs : dict):
                 assert configs['val_hold_out'] < 1, 'val_hold_out must be a decimal between 0 and 1'
         else: # train NO, val YES
             assert type(configs['val']) == list, 'val must be an array of strings'
-            assert configs['auto_split'] == False, 'auto_split must be false if a validation set is provided'
             assert len(configs['val']) > 0, 'At least one validation image filename must be provided if a validation set is provided'
             assert all([type(fn) == str for fn in configs['val']]), 'All elements of the validation filename set must be strings'            
             configs.update({'auto_split' : False})
