@@ -95,14 +95,14 @@ def training(configs : dict):
 
 
     if 'image_ext' not in configs:
-        raise KeyError('image_ext not provided. It refers to the file extension of training image data')
+        configs.update({'image_ext' : '.jpg'})
     else:
         assert type(configs['image_ext']) == str, 'image_ext must be a string'
         assert configs['image_ext'][0] == '.', 'image_ext must start with \'.\''
 
 
     if 'annotation_ext' not in configs:
-        raise KeyError('annotation_ext not provided. It refers to the file extension of training annotation data')
+        configs.update({'annotation_ext' : '.png'})
     else:
         assert type(configs['annotation_ext']) == str, 'annotation_ext must be a string'
         assert configs['annotation_ext'][0] == '.', 'annotation_ext must start with a .'
