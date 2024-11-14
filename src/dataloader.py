@@ -40,13 +40,17 @@ def create_dataset(configs : dict) -> tuple[dict, int, int]:
     train_val_paths = create_dstree(ds_path)
 
     # if auto_split is true, this function will split the data into train/val sets
-    configs = split_data(configs)
+    split_data(configs)
+    
+    # update input shape in configs for model definition
+    get_input_shape(configs)
 
     # copy images into dataset directory
     populate_dstree(configs)
 
     # augment dataset
-    augment_dataset(configs, train_val_paths['train_path'])
+    if configs['augment']:
+        augment_dataset(configs, train_val_paths['train_path'])
 
     # create a Tensorflow Dataset object
     return define_dataset(train_val_paths, configs)
@@ -134,6 +138,21 @@ def copy_files(files : list, source : str, dest : str):
     for f in files:
         src = join(source, f)
         shutil.copy(src, dest)
+
+
+def get_input_shape(configs : dict):
+    """
+    Adds input shape to configs
+    
+    Parameters
+    ----------
+    configs : dict
+        Input configs given by the user
+    """
+    
+    data_path = join(configs['root'], 'data/', configs['dataset_prefix'], 'images/', configs['train'][0] + configs['image_ext'])
+    test_img = cv2.imread(data_path)
+    configs.update({'input_shape' : test_img.shape})
 
 
 def augment_dataset(configs : dict, image_train_path : str):
@@ -323,7 +342,7 @@ def get_ds_stats(dataset : tf.data.Dataset) -> tuple[tf.Tensor, tf.Tensor]:
     return mean, std
 
 
-def split_data(configs : dict) -> dict:
+def split_data(configs : dict):
     """
     Add training and validation sets to configs if necessary
 
@@ -365,8 +384,6 @@ def split_data(configs : dict) -> dict:
     # case 3: data is already split and provided by the user
     else:
         pass
-
-    return configs
     
 
 def auto_split(fns : list, val_hold_out : dict) -> tuple[list, list]:

@@ -78,8 +78,8 @@ def inference_ds(configs : dict, model : tf.keras.Model):
     val_ds = val_ds.batch(1)
 
     # get predictions
-    train_preds = model.predict(train_ds, verbose=2)
-    val_preds = model.predict(val_ds, verbose=2)
+    train_preds = model.predict(train_ds, verbose=1)
+    val_preds = model.predict(val_ds, verbose=1)
 
     # define output directories
     train_save_dir = os.path.join(configs['results'], 'train_preds')
@@ -237,7 +237,7 @@ def cv_plot_results(configs : dict):
     axs[1].set_ylabel('Val Loss (BCE)')
     for ax in axs:
         ax.set_yscale('log')   
-        ax.set_xlim([0, configs['num_epochs']])
+        ax.set_xlim([1, configs['num_epochs']])
         ax.set_xlabel('Epoch')
         ax.grid(visible=True)
         ax.legend()

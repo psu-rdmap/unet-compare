@@ -8,7 +8,7 @@ import datetime
 
 def general(configs : dict):
     """
-    Checks configs that are general to all loops
+    Checks configs that are general to all modes
 
     Parameters
     ----------
@@ -23,31 +23,55 @@ def general(configs : dict):
     configs.update({'root' : root})
 
 
-    training_loops = ['Single', 'CrossVal', 'Inference']
-    if 'training_loop' not in configs:
-        raise KeyError('training_loop not provided. Choose from: {}, {}, {}'.format(*training_loops))
+    training_modes = ['Single', 'CrossVal', 'Inference']
+    if 'training_mode' not in configs:
+        configs.update({'training_mode' : 'Single'})
     else:
-        assert configs['training_loop'] in training_loops, 'Provided training_loop is invalid. Choose from: {}, {}, {}'.format(*training_loops)
+        assert configs['training_mode'] in training_modes, 'Provided training_mode is invalid. Choose from: {}, {}, {}'.format(*training_modes)
 
 
+    if 'dataset_prefix' not in configs:
+        configs.update({'dataset_prefix' : 'gb'})
+    else:
+        assert type(configs['dataset_prefix']) == str, 'dataset_prefix must be a string'
+        data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'])
+        assert os.path.isdir(data_path), 'No directory exists at {}'.format(data_path)
+
+
+    now = datetime.datetime.now()
+    results_dir = 'results_' + configs['dataset_prefix'] + '_' + configs['training_mode'] + '_' + configs['encoder_name'] + '_' + configs['decoder_name'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+    results_dir = os.path.join(configs['root'], results_dir)
+    configs.update({'results' : results_dir})
+
+
+def training(configs : dict):
+    """
+    Checks configs that are specific to training modes single and cross validation 
+
+    Parameters
+    ----------
+    configs : dict
+        Input configs defined in the JSON input file with updates after general()
+
+    """
+    
     encoders = ['UNet', 'EfficientNetB7']
     if 'encoder_name' not in configs:
-        raise KeyError('encoder_name not provided. Choose from: {}, {}'.format(*encoders))
+        configs.update({'encoder_name' : 'UNet'})
     else:
         assert configs['encoder_name'] in encoders, 'Provided encoder_name is invalid. Choose from: {}, {}'.format(*encoders)
 
     
     decoders = ['UNet', 'UNet++']
     if 'decoder_name' not in configs:
-        raise KeyError('decoder_name not provided. Choose from: {}, {}'.format(*decoders))
+        configs.update({'decoder_name' : 'UNet'})
     else:
         assert configs['decoder_name'] in decoders, 'Provided decoder_name is invalid. Choose from: {}, {}'.format(*decoders)
 
 
     # vanilla UNet encoder needs filter numbers
     if 'encoder_filters' not in configs:
-        assert configs['encoder_name'] == 'EfficientNetB7'
-        configs.update({'encoder_filters' : None})
+        configs.update({'encoder_filters' : [64, 128, 256, 512, 1024]})
     else:
         assert type(configs['encoder_filters']) == list, 'encoder_filters must be an array of 5 positive integers'
         assert len(configs['encoder_filters']) == 5, 'encoder_filters must have 5 integers'
@@ -56,28 +80,12 @@ def general(configs : dict):
     
 
     if 'decoder_filters' not in configs:
-        KeyError('decoder_filters not provided. It must be a list of 4 integers')
+        configs.update({'encoder_filters' : [512, 256, 128, 64, 32]})
     else:
         assert type(configs['decoder_filters']) == list, 'decoder_filter must be an array of 5 positive integers'
         assert len(configs['decoder_filters']) == 5, 'decoder_filter must have 4 integers'
         assert all([type(filters) == int for filters in configs['decoder_filters']]), 'decoder_filter must be integers'
         assert all([filters > 0 for filters in configs['decoder_filters']]), 'decoder_filter must be positive'
-
-
-    if 'dataset_prefix' not in configs:
-        raise KeyError('dataset_prefix not provided. This is the dataset directory name found in data/')
-    else:
-        assert type(configs['dataset_prefix']) == str, 'dataset_prefix must be a string'
-        data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'])
-        assert os.path.isdir(data_path), 'No directory exists at {}'.format(data_path)
-
-
-    if 'input_shape' not in configs:
-        raise KeyError('input_shape not provided. It must be an array following: [Height, Width, Channels]')
-    else:
-        assert len(configs['input_shape']) == 3, 'input_shape must follow [Height, Width, Channels]'
-        assert all([type(shape) == int for shape in configs['input_shape']]), 'input_shape must be an array of positive integers'
-        assert all([shape > 0 for shape in configs['input_shape']]), 'input_shape must be an array of positive integers'
 
 
     if 'image_ext' not in configs:
@@ -87,25 +95,15 @@ def general(configs : dict):
         assert configs['image_ext'][0] == '.', 'image_ext must start with \'.\''
 
 
-    now = datetime.datetime.now()
-    results_dir = 'results_' + configs['dataset_prefix'] + '_' + configs['training_loop'] + '_' + configs['encoder_name'] + '_' + configs['decoder_name'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
-    results_dir = os.path.join(configs['root'], results_dir)
-    configs.update({'results' : results_dir})
-
-
-def training(configs : dict):
-    """
-    Checks configs that are specific to training loops single and cross validation 
-
-    Parameters
-    ----------
-    configs : dict
-        Input configs defined in the JSON input file with updates after general()
-
-    """
+    if 'annotation_ext' not in configs:
+        raise KeyError('annotation_ext not provided. It refers to the file extension of training annotation data')
+    else:
+        assert type(configs['annotation_ext']) == str, 'annotation_ext must be a string'
+        assert configs['annotation_ext'][0] == '.', 'annotation_ext must start with a .'
+        
 
     if 'learning_rate' not in configs:
-        raise KeyError('learning_rate not provided. It must be a float between 0 and 1')
+        configs.update({'learning_rate' : 1e-4})
     else:
         assert type(configs['learning_rate']) == float, 'learning_rate must be float between 0 and 1'     
         assert configs['learning_rate'] > 0, 'learning_rate must be float between 0 and 1'
@@ -113,7 +111,7 @@ def training(configs : dict):
 
 
     if 'l2_reg' not in configs:
-        raise KeyError('l2_reg not provided. It refers to the strnegth of L2 regularization and must be a float between 0 (inclusive) and 1')
+        configs.update({'l2_reg' : 0.0})
     else:
         assert type(configs['l2_reg']) == float, 'l2_reg must be a float between 0 (inclusive) and 1'
         assert configs['l2_reg'] >= 0, 'l2_reg must be a float between 0 (inclusive) and 1'
@@ -121,46 +119,39 @@ def training(configs : dict):
 
 
     if 'batch_size' not in configs:
-        raise KeyError('batch_size not provided. It must be a positive integer')
+        configs.update({'batch_size' : 1})
     else:
         assert type(configs['batch_size']) == int, 'batch_size must be a positive integer'
         assert configs['batch_size'] > 0, 'batch_size must be a positive integer'
 
 
     if 'num_epochs' not in configs:
-        raise KeyError('num_epochs not provided. It must be a positive integer')
+        configs.update({'num_epochs' : 50})
     else:
         assert type(configs['num_epochs'] == int), 'num_epochs must be a positive integer'
         assert configs['num_epochs'] > 0, 'num_epochs must be a positive integer'
    
 
     if 'batchnorm' not in configs:
-        raise KeyError('batchnorm not provided. It must be true or false')
+        configs.update({'batchnorm' : False})
     else:
         assert type(configs['batchnorm']) == bool, 'batchnorm must be true or false'
 
-
-    if 'annotation_ext' not in configs:
-        raise KeyError('annotation_ext not provided. It refers to the file extension of training annotation data')
-    else:
-        assert type(configs['annotation_ext']) == str, 'annotation_ext must be a string'
-        assert configs['annotation_ext'][0] == '.', 'annotation_ext must start with a .'
-
     
     if 'augment' not in configs:
-        raise KeyError('augment not provided. It must be true or false')
+        configs.update({'augment' : True})
     else:
         assert type(configs['augment']) == bool, 'augment must be true or false'
 
 
     if 'save_best_only' not in configs:
-        raise KeyError('save_best_only not provided. It determines whether to save checkpoints only when val loss improves. It must be true or false')
+        configs.update({'save_best_only' : True})
     else:
         assert type(configs['save_best_only']) == bool, 'save_best_only must be true or false'
 
 
     if 'standardize' not in configs:
-        raise KeyError('standardize not provided. It determines whether to standardize the dataset prior to training. It must be true or false')
+        configs.update({'standardize' : False})
     else:
         assert type(configs['standardize']) == bool, 'standardize must be true or false'
 
@@ -180,65 +171,64 @@ def single(configs : dict):
     
 
     if 'early_stopping' not in configs:
-        raise KeyError('early_stopping not provided. It must be true or false. Set to false if using cross validation')
+        configs.update({'early_stopping' : True})
     else:
         assert type(configs['early_stopping']) == bool, 'early_stopping must be true or false. Set to false if using cross validation'
 
         
     if configs['early_stopping']:
         if 'patience' not in configs:
-            raise KeyError('patience must be provided if using early stopping. It refers to the number of epochs to wait after min val loss is reached before stopping training. It must be a positive integer')
+            configs.update({'patience' : 10})
         else:
             assert type(configs['patience']) == int, 'patience must be a positive integer'
             assert configs['patience'] > 0, 'patience must be a positive integer'
 
 
-    if 'val' not in configs:
-        if 'auto_split' not in configs:
-            raise KeyError('auto_split must be true if no val set is provided')
-        else:
-            assert configs['auto_split'] == True, 'auto_split must be true if no val set is provided'
+    if 'train' not in configs:
+        if 'val' not in configs: # train NO, val NO
+            configs.update({'auto_split' : True})
             if 'val_hold_out' not in configs:
-                raise KeyError('val_hold_out must be provided if no val set is provided. It refers to the percentage of the training images to hold out for validation')
+                raise KeyError('val_hold_out must be provided if no val set is provided. It refers to the percentage of the data to hold out for validation')
             else:
                 assert type(configs['val_hold_out'] == float), 'val_hold_out must be a decimal between 0 and 1'
                 assert configs['val_hold_out'] > 0, 'val_hold_out must be a decimal between 0 and 1'
                 assert configs['val_hold_out'] < 1, 'val_hold_out must be a decimal between 0 and 1'
-    else:
-        assert type(configs['val']) == list, 'val must be an array of strings'
-        assert configs['auto_split'] == False, 'auto_split must be false if a validation set is provided'
-        assert len(configs['val']) > 0, 'At least one validation image filename must be provided if a validation set is provided'
-        assert all([type(fn) == str for fn in configs['val']]), 'All elements of the validation filename set must be strings'
-
-
-    if 'train' not in configs:
-        data_path = os.path.join('data/', configs['dataset_prefix'], 'images/')
-        assert os.path.isdir(data_path), 'Attempted to get retrieve filenames from {}, but the directory does not exist'.format(data_path)
-        train_filenames = [os.path.splitext(fn)[0] for fn in os.listdir(data_path)]
-        if 'val' not in configs:
-            configs.update({'train' : train_filenames})
-        else: 
-            for val_fn in configs['val']: train_filenames.remove(val_fn)
-            assert len(train_filenames) > 0, 'At least one image must be left for the train set '
-            configs.update({'train' : train_filenames})
-            assert ('auto_split' not in configs) or (configs['auto_split'] == False), 'Successfully retrieved trainining filenames, but auto_split was true'            
-    else:
+        else: # train NO, val YES
+            assert type(configs['val']) == list, 'val must be an array of strings'
+            assert configs['auto_split'] == False, 'auto_split must be false if a validation set is provided'
+            assert len(configs['val']) > 0, 'At least one validation image filename must be provided if a validation set is provided'
+            assert all([type(fn) == str for fn in configs['val']]), 'All elements of the validation filename set must be strings'            
+            configs.update({'auto_split' : False})
+            data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
+            train_fns = [os.path.splitext(fn)[0] for fn in os.listdir(data_path)]
+            for val_fn in configs['val']: train_fns.remove(val_fn)
+            assert len(train_fns) > 0, 'At least one image must be left over for the training set'
+            configs.update({'train' : train_fns})
+    else:  
+        configs.update({'auto_split' : False})
         assert type(configs['train']) == list, 'train must be an array of strings'
         assert len(configs['train']) > 0, 'At least one training image filename must be provided'
         assert all([type(fn) == str for fn in configs['train']]), 'All elements of the training filename set must be strings'
+        if 'val' not in configs: # train YES, val NO
+            data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
+            val_fns = [os.path.splitext(fn)[0] for fn in os.listdir(data_path)]
+            for train_fn in configs['train']: val_fns.remove(train_fn)
+            assert len(val_fns) > 0, 'At least one image must be left over for the validation set'
+            configs.update({'val' : val_fns})
+        else: # train YES, val YES
+            assert type(configs['val']) == list, 'val must be an array of strings'
+            assert len(configs['val']) > 0, 'At least one validation image filename must be provided if a validation set is provided'
+            assert all([type(fn) == str for fn in configs['val']]), 'All elements of the validation filename set must be strings'
+            assert all([val_fn not in configs['train'] for val_fn in configs['val']]), 'Validation filename detected in training set'
 
-    
-    if 'val' in configs:
-        assert all([val_fn not in configs['train'] for val_fn in configs['val']]), 'Validation filename detected in training set'
 
-
-    if 'model_path' in configs:
-        assert type(configs['model_path']) == str, 'If continuing training from a previous model, model_path must be a path like string to the model .keras file. It should be relative to root'
-        model_path = os.path.join(configs['root'], configs['model_path'])
-        assert os.path.exists(model_path), 'Weights file does not exist at {}'.format(model_path)
-        configs['model_path'] = model_path
+    if 'checkpoint_path' in configs:
+        assert type(configs['checkpoint_path']) == str, 'If continuing training from a previous model, checkpoint_path must be a path like string to the model .keras file. It should be relative to root'
+        model_path = os.path.join(configs['root'], configs['checkpoint_path'])
+        assert os.path.exists(model_path), 'Model file does not exist at {}'.format(model_path)
+        configs['checkpoint_path'] = model_path
     else:
-        configs.update({'model_path' : None})
+        configs.update({'checkpoint_path' : None})
             
 
 def cross_val(configs : dict):
@@ -274,7 +264,7 @@ def cross_val(configs : dict):
 
 
     if 'num_folds' not in configs:
-        raise KeyError('num_folds not provided. It must be a positive integer greater than 1')
+        configs.update({'num_folds' : 3})
     else:
         assert type(configs['num_folds']) == int, 'num_folds must be a positive integer greater than 1'
         assert configs['num_folds'] > 1, 'num_folds must be a positive integer greater than 1'
@@ -300,5 +290,5 @@ def inference(configs : dict):
     else:
         assert type(configs['model_path']) == str, 'model_path must be a path like string to the .keras model file. It should be relative to root'
         model_path = os.path.join(configs['root'], configs['model_path'])
-        assert os.path.exists(model_path), 'Weights file does not exist at {}'.format(model_path) 
+        assert os.path.exists(model_path), 'Model file does not exist at {}'.format(model_path) 
         configs['model_path'] = model_path 
