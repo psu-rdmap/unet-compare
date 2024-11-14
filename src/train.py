@@ -37,7 +37,7 @@ def main():
     mkdir(configs['results'])
     
     # perform mode-specific checks on user input then run the chosen mode
-    if configs['training_modes'] == 'CrossVal':
+    if configs['training_mode'] == 'CrossVal':
         checkers.cross_val(configs)
         print_input(configs)
         modes.cross_val_mode(configs)

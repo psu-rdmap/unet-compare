@@ -88,6 +88,12 @@ def training(configs : dict):
         assert all([filters > 0 for filters in configs['decoder_filters']]), 'decoder_filter must be positive'
 
 
+    if ' freeze_backbone' not in configs:
+        configs.update({'freeze_backbone' : False})
+    else:
+        assert type(configs['batchnorm']) == bool, 'freeze_backbone must be true or false'
+
+
     if 'image_ext' not in configs:
         raise KeyError('image_ext not provided. It refers to the file extension of training image data')
     else:

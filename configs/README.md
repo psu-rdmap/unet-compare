@@ -20,7 +20,6 @@ General
 │   └── CrossVal
 |
 └── Inference
-
 ```
 
 All parameters have a default setting, so the user is tasked with only updating parameters that are relevant to the specific run. The following sections will go over every input parameter, their definition, expected values, and the default setting.
@@ -61,9 +60,14 @@ This section refers to the additional input parameters shared by `Single` and `C
     - **Default**: `[64, 128, 256, 512, 1024]`
 
 - `decoder_filters`
-    -  **Definition**: number of filters to use for each convolution operation for each row 
+    - **Definition**: number of filters to use for each convolution operation for each row 
     - **Expected values**: `[int, int, int, int, int]`
     - **Default**: `[512, 256, 128, 64, 32]`
+
+- `freeze_backbone`
+    - **Definition**: option for whether to freeze the pre-trained backbone. Only applies to the `EfficientNetB7` encoder
+    - **Expected values**: `bool`
+    - **Default**: `false`
 
 - `image_ext`
     - **Definition**: filename extension for the training images
@@ -175,3 +179,7 @@ This section refers to additional input parameters specific to the `Inference` m
     - **Definition**: path to a `.keras` model file relative to `/path/to/unet-compare`
     - **Expected values**: `string`
     - **Default**: must be provided
+
+
+# Example Configs File
+Below is an actual configs file used to train the baseline UNet model
