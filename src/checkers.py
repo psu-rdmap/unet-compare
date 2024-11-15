@@ -80,7 +80,7 @@ def training(configs : dict):
     
 
     if 'decoder_filters' not in configs:
-        configs.update({'encoder_filters' : [512, 256, 128, 64, 32]})
+        configs.update({'decoder_filters' : [512, 256, 128, 64, 32]})
     else:
         assert type(configs['decoder_filters']) == list, 'decoder_filter must be an array of 5 positive integers'
         assert len(configs['decoder_filters']) == 5, 'decoder_filter must have 4 integers'
