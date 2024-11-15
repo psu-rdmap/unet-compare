@@ -38,12 +38,6 @@ def general(configs : dict):
         assert os.path.isdir(data_path), 'No directory exists at {}'.format(data_path)
 
 
-    now = datetime.datetime.now()
-    results_dir = 'results_' + configs['dataset_prefix'] + '_' + configs['training_mode'] + '_' + configs['encoder_name'] + '_' + configs['decoder_name'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
-    results_dir = os.path.join(configs['root'], results_dir)
-    configs.update({'results' : results_dir})
-
-
 def training(configs : dict):
     """
     Checks configs that are specific to training modes single and cross validation 
@@ -160,6 +154,11 @@ def training(configs : dict):
         configs.update({'standardize' : False})
     else:
         assert type(configs['standardize']) == bool, 'standardize must be true or false'
+
+    now = datetime.datetime.now()
+    results_dir = 'results_' + configs['dataset_prefix'] + '_' + configs['training_mode'] + '_' + configs['encoder_name'] + '_' + configs['decoder_name'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+    results_dir = os.path.join(configs['root'], results_dir)
+    configs.update({'results' : results_dir})
 
 
 def single(configs : dict):
@@ -296,4 +295,9 @@ def inference(configs : dict):
         assert type(configs['model_path']) == str, 'model_path must be a path like string to the .keras model file. It should be relative to root'
         model_path = os.path.join(configs['root'], configs['model_path'])
         assert os.path.exists(model_path), 'Model file does not exist at {}'.format(model_path) 
-        configs['model_path'] = model_path 
+        configs['model_path'] = model_path
+
+    now = datetime.datetime.now()
+    results_dir = 'results_' + configs['dataset_prefix'] + '_' + configs['training_mode'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+    results_dir = os.path.join(configs['root'], results_dir)
+    configs.update({'results' : results_dir})
