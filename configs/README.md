@@ -186,7 +186,7 @@ Below is an example configs file used to train the baseline U-Net model. It only
 
 ```JSON
 {
-	"l2_reg" : 1e-2,
+    "l2_reg" : 1e-2,
     "num_epochs" : 750,
     "patience" : 50,
     "dataset_prefix" : "gb_512",
