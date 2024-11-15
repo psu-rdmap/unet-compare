@@ -32,10 +32,7 @@ print('\nChecking user input...\n')
 checkers.general(configs)
 
 
-def main():
-    # create top-level results directory
-    mkdir(configs['results'])
-    
+def main():  
     # perform mode-specific checks on user input then run the chosen mode
     if configs['training_mode'] == 'CrossVal':
         checkers.cross_val(configs)
@@ -58,6 +55,9 @@ def main():
 
 
 def print_input(configs : dict):
+    # create top-level results directory
+    mkdir(configs['results'])
+    
     # print input to user for confirmation
     print('-'*50 + ' User Input ' + '-'*50)
     for key, val in configs.items():
