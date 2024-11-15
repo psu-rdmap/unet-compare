@@ -199,7 +199,7 @@ Below is another example configs file used to train U-Net++ model with the Effic
 
 ```JSON
 {
-	"encoder_name" : "EfficientNetB7",
+    "encoder_name" : "EfficientNetB7",
     "decoder_name" : "UNet++",
     "l2_reg" : 1e-3,
 	"num_epochs" : 50,
