@@ -6,7 +6,7 @@ There are three types of run modes that can be performed:
 
 - `Single()` - training a single model
 - `CrossVal()` - training multiple models using [k-fold cross-validation](https://en.wikipedia.org/wiki/Cross-validation_(statistics))
-- `Inference()` - inferencing only using a provided model
+- `Inference()` - inference using a provided model
 
 All modes share a few general parameters, but the training modes (`Single`, `CrossVal`) have many additional parameters, with some shared between them and others unique to the mode. The overall structure of the input parameters can understood as follows:
 
@@ -181,5 +181,56 @@ This section refers to additional input parameters specific to the `Inference` m
     - **Default**: must be provided
 
 
-# Example Configs File
-Below is an actual configs file used to train the baseline UNet model
+# Example Configs Files
+Below is an example configs file used to train the baseline U-Net model. It only updates the parameters that differ from the default values.
+
+```JSON
+{
+	"l2_reg" : 1e-2,
+	"num_epochs" : 750,
+	"patience" : 50,
+	"dataset_prefix" : "gb_512",
+	"batch_size" : 4,
+	"val" : ["11_4", "1_2", "24_1", "4_2", "16_4", "14_4", "11_1", "30_1", "12_1", "1_3", "26_4", "30_4", "14_3", "31_4", "16_2", "4_1", "1_1", "7_3", "25_4", "30_3", "16_3", "14_1", "30_2"]
+}
+```
+
+Below is another example configs file used to train U-Net++ model with the EfficientNetB7 pre-trained backbone. This shows how if `train` and `val` are excluded, the data will be automatically split using the `val_hold_out` percentage.
+
+```JSON
+{
+	"encoder_name" : "EfficientNetB7",
+    "decoder_name" : "UNet++",
+    "l2_reg" : 1e-3,
+	"num_epochs" : 50,
+	"patience" : 10,
+	"dataset_prefix" : "bubble",
+	"batch_size" : 4,
+    "val_hold_out" : 0.40
+}
+```
+
+The next example is using cross-validation with the U-Net++ model. Here, the minimum number of image/annotation pairs given five folds are used, thus being a special type of cross-validation known as *Leave One Out Cross Validation*.
+
+```JSON
+{
+    "decoder_name" : "UNet++",
+    "training_mode" : "CrossVal",
+    "l2_reg" : 1e-4,
+	"num_epochs" : 50,
+	"dataset_prefix" : "bubble",
+	"batch_size" : 4,
+    "num_folds" : 5,
+    "train" : ["2_2", "3_1", "6_2", "7_3", "8_1"]
+}
+```
+
+The final example is using a model that has been trained to inference a set of images.
+
+```JSON
+{
+    "training_mode" : "Inference",
+	"dataset_prefix" : "test_images",
+    "model_path" : "results_dir/best.model.keras"
+}
+```
