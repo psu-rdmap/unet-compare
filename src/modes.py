@@ -123,6 +123,9 @@ def cross_val_mode(configs : dict):
     # plot metrics over all folds
     print('\nPlotting CV Metrics...')
     utils.cv_plot_results(configs)
+    
+    # remove previous val from configs
+    configs.pop('val')
 
     print('\nDone.')
 

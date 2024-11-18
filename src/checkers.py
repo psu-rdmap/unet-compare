@@ -253,6 +253,7 @@ def cross_val(configs : dict):
 
     configs.update({'early_stopping' : False})
     configs.update({'auto_split' : False})
+    configs.update({'checkpoint_path' : None})
     assert 'val' not in configs, 'Do not provide a validation set, if using cross-validation'
 
     
