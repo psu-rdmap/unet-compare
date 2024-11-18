@@ -31,7 +31,7 @@ def general(configs : dict):
 
 
     if 'dataset_prefix' not in configs:
-        configs.update({'dataset_prefix' : 'gb'})
+        configs.update({'dataset_prefix' : 'gb_1024'})
     else:
         assert type(configs['dataset_prefix']) == str, 'dataset_prefix must be a string'
         data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'])
