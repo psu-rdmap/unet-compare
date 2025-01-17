@@ -4,5 +4,4 @@ results*
 last_run.out
 dataset/
 src/test.py
-requirements.txt
 run.sh

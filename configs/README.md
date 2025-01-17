@@ -25,7 +25,7 @@ General
 All parameters have a default setting, so the user is tasked with only updating parameters that are relevant to the specific run. The following sections will go over every input parameter, their definition, expected values, and the default setting.
 
 
-# General Configs - `Single`, `Inference`, `CrossVal`
+# General Configs - `Single`, `CrossVal`, `Inference`
 
 This section refers to the general input parameters shared by all modes.
 
