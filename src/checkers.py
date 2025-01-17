@@ -157,7 +157,7 @@ def training(configs : dict):
 
     now = datetime.datetime.now()
     results_dir = 'results_' + configs['dataset_prefix'] + '_' + configs['training_mode'] + '_' + configs['encoder_name'] + '_' + configs['decoder_name'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
-    results_dir = os.path.join(configs['root'], results_dir)
+    results_dir = os.path.join(configs['root'], 'results/', results_dir)
     configs.update({'results' : results_dir})
 
 
@@ -300,5 +300,5 @@ def inference(configs : dict):
 
     now = datetime.datetime.now()
     results_dir = 'results_' + configs['dataset_prefix'] + '_' + configs['training_mode'] + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
-    results_dir = os.path.join(configs['root'], results_dir)
+    results_dir = os.path.join(configs['root'], 'results/', results_dir)
     configs.update({'results' : results_dir})

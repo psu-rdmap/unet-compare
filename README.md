@@ -86,11 +86,85 @@ Images are associated with their corresponding annotations by giving them the sa
 
 If you do not want to copy your own dataset into `data/`, it can be symlinked (i.e. create a shortcut) instead via:
 ```bash
-ln -s /path/to/dataset/ /path/to/unet-compare/data/`
+ln -s /path/to/dataset/ /path/to/unet-compare/data/
 ```
 
 ### 2. Running `train.py`
-This script is
+The next step is to create a configs file in the `configs/` following the instructions in the [README](configs/README.md) file there. 
+
+The script `train.py` is responsible for checking the configs and initiating the operation mode. Therefore, to start training, cross-validation, or inference, run the following line with your configs file:
+```bash
+python scr/train.py configs/<filename>.json
+```
+If you incorrectly defined any configs, an error will be thrown. Otherwise, operation will commence!
+
+When you are finished, just deactivate the environment:
+```bash
+conda deactivate
+```
+
+### 3. Results
+Results will be placed in the `results/` directory with a unique directory name describing the run.
+
+If training (single and cross-validation), each results directory will contain the following
+- Copy of the configs used
+- Keras model file containing model structure and weights. This is what should be used for inference
+- Model predictions for training and validation images
+- CSV file with metrics calculated during training
+- Plots of the loss and metrics
+- Results from each fold (CV only)
+- Statistical results (CV only)
+
+If inferencing, there will instead be
+- Copy of the configs used
+- Model predictions
+
+# Notes for Roar Collab Users (PSU)
+If you are using Penn State's computing cluster, there are some additional considerations.
+
+### Installation
+When installing the project, Conda and Git tools will already be available. Also, you will have to use the command line via *Clusters* > *RC Shell Access* on the RC portal.
+
+### Datasets
+To upload data, you can use the RC portal's *Upload* function, an external tool like [*WinSCP*](https://winscp.net/eng/index.php), or command-line [file transfer methods](https://docs.icds.psu.edu/04_HandlingData/). 
+
+### Running
+To run `train.py`, a job must be submitted to the Slurm queue with a GPU-enabled account. There are two types of jobs: batch (`sbatch`) and interactive (`salloc`). Batch computing is an offline process, while interactive computing is tied to the runtime. 
+
+**For batch jobs**, create a BASH script to handle resource acquisition and environment preparation filling in the details:
+```bash
+vim run.sh
+# copy the following lines (with hashtags, they are Slurm directives), paste by right-clicking, and typing :wq
+
+#!/bin/bash
+#SBATCH --account=<account_name>
+#SBATCH --nodes=1
+#SBATCH --ntasks=4 
+#SBATCH --mem=8GB
+#SBATCH --gpus=1 
+#SBATCH --time=<time>
+#SBATCH --output=last_run.out
+module load anaconda
+conda activate $PWD/env
+python src/train.py configs/<filename>.json
+conda deactivate
+```
+Now you run the script:
+```bash
+sbatch run.sh
+```
+Once it is your turn in the queue, the shell script will be executed.
+
+**For interactive jobs**, you acquire resources, activate the environment, do any work you need to do, and then exit:
+```bash
+salloc --account=<account_name> --ntasks=4 --gpus=1 --mem=32GB --time=1:00:00
+conda activate unet-compare/env
+# work ...
+conda deactivate
+exit
+```
+
+**Note:** you must be connected to a GPU-enabled account whenever running the code. Also, submitting an interactive job will automatically deactivate the virtual environment, so you must only activate after running `salloc`.
 
 # References
 [1] O. Ronneberger, P. Fischer, and T. Brox, “U-Net: Convolutional Networks for Biomedical Image Segmentation,” arXiv.org, May 18, 2015. https://arxiv.org/abs/1505.04597 <br/>

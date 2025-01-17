@@ -1,7 +1,3 @@
 env/
 src/__pycache__/
-results*
-last_run.out
-dataset/
-src/test.py
-run.sh
+results/*
