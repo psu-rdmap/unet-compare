@@ -1,5 +1,5 @@
 tensorflow[and-cuda]==2.18.0
-opencv-python==4.10.0
+opencv-python==4.11.0.86
 matplotlib==3.9.2
 pandas==2.2.2
 natsort==8.4.0

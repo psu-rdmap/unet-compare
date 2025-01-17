@@ -1,15 +1,14 @@
 # Configs Overview
 
-Config files are user-specified input parameters for training. These include training hyperparameters, dataset parameters, paths, and other settings. Input parameters are defined using keyword-argument pairs with the [JSON](https://www.json.org/json-en.html) format. Upon running the code, the input parameters will be checked and modified as necessary. At the end, the file will be dumped into the corresponding results directory for reference.
+Config files are user-specified input parameters for training and inference. These include training hyperparameters, dataset parameters, paths, and other settings. Input parameters are defined using keyword-argument pairs with the [JSON](https://www.json.org/json-en.html) format. Upon running the code, the input parameters will be checked and modified as necessary. At the end, the file will be dumped into the corresponding results directory for reference.
 
-There are three types of run modes that can be performed:
+There are three types of operation modes that can be performed:
 
-- `Single()` - training a single model
-- `CrossVal()` - training multiple models using [k-fold cross-validation](https://en.wikipedia.org/wiki/Cross-validation_(statistics))
-- `Inference()` - inference using a provided model
+- `Single` - training a single model
+- `CrossVal` - training multiple models using [k-fold cross-validation](https://en.wikipedia.org/wiki/Cross-validation_(statistics))
+- `Inference` - inference using a provided model
 
 All modes share a few general parameters, but the training modes (`Single`, `CrossVal`) have many additional parameters, with some shared between them and others unique to the mode. The overall structure of the input parameters can understood as follows:
-
 ```
 General
 |
@@ -21,8 +20,7 @@ General
 |
 └── Inference
 ```
-
-All parameters have a default setting, so the user is tasked with only updating parameters that are relevant to the specific run. The following sections will go over every input parameter, their definition, expected values, and the default setting.
+To simplify config files, you only have to include an input parameter when you wish to use a value that is different from the default setting (see the [Example Config Files](#example-configs-files) section for examples). The following sections will go over every input parameter, their definition, expected values, and the default setting.
 
 
 # General Configs - `Single`, `CrossVal`, `Inference`
@@ -137,7 +135,7 @@ This section refers to paremeters specific to the `Single` mode.
 - `train`
     - **Definition**: filenames (without the extension) of all image/annotation pairs to use for the training set. If provided, `val` will include all image/annotation pairs not specified. If not provided, it will include all image/annotation pairs not specified in `val`. If neither `train` nor `val` are provided, the data will be split automatically using all available data with a percentage specified in `val_hold_out` going to `val`
     - **Expected values**: `[string, string, ...]`
-    - **Default**: `none`
+    - **Default**: `none` 
 
 
 - `val`
@@ -182,7 +180,7 @@ This section refers to additional input parameters specific to the `Inference` m
 
 
 # Example Configs Files
-Below is an example configs file used to train the baseline U-Net model. It only updates the parameters that differ from the default values.
+Below is an example configs file used to train the baseline U-Net model. It only includes parameters that differ from their default values.
 
 ```JSON
 {
