@@ -39,7 +39,7 @@ Now that Conda is installed, the repository is cloned and a virtual environment 
 ```bash
 git clone https://github.com/psu-rdmap/unet-compare.git
 cd unet-compare
-conda create -p env python 3.11
+conda create -p env python=3.11
 conda activate env/
 ```
 Next, ensure the install of Python and pip (the package installer for Python) corresponds to the virtual environment.
@@ -61,7 +61,7 @@ pip install -r requirements.txt
 ```
 The project should now be installed. The following line checks which devices Tensorflow recognizes:
 ```bash
-python scripts/check_gpu.py
+python scripts/check_devices.py
 ```
 
 # Training & Inference
@@ -131,10 +131,10 @@ To upload data, you can use the RC portal's *Upload* function, an external tool 
 ### Running
 To run `train.py`, a job must be submitted to the Slurm queue with a GPU-enabled account. There are two types of jobs: batch (`sbatch`) and interactive (`salloc`). Batch computing is an offline process, while interactive computing is tied to the runtime. 
 
-**For batch jobs**, create a BASH script to handle resource acquisition and environment preparation filling in the details:
+**For batch jobs**, create a BASH script to handle resource acquisition and environment preparation with the following code, filling in the details:
 ```bash
 vim run.sh
-# copy the following lines (with hashtags, they are Slurm directives), paste by right-clicking, and typing :wq
+# copy the following lines (with hashtags, they are Slurm directives), paste by right-clicking, and type :wq to save/close
 
 #!/bin/bash
 #SBATCH --account=<account_name>

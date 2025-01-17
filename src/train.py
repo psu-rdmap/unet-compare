@@ -59,10 +59,10 @@ def print_input(configs : dict):
     mkdir(configs['results'])
     
     # print input to user for confirmation
-    print('-'*50 + ' User Input ' + '-'*50)
+    print('-'*50 + ' User Input ' + '-'*75)
     for key, val in configs.items():
         print(key + ':', val)
-    print('-'*102)
+    print('-'*137)
 
 
 if __name__ == '__main__':
