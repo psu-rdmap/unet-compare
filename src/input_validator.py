@@ -1,17 +1,19 @@
 from pydantic import BaseModel, PositiveInt, NonNegativeInt, PositiveFloat, NonNegativeFloat, Field, field_validator, model_validator
-from typing import Literal, List, Optional
+from typing import Literal, List, Optional, Tuple
 from pathlib import Path
 from warnings import warn
 import numpy as np
 from natsort import os_sorted
 from datetime import datetime
+import cv2 as cv
 
-ROOT_DIR = Path(__file__).parent
+ROOT_DIR = Path(__file__).parent.parent
 
 
 class General(BaseModel):
     """Most general configs that apply to all possible use cases. Only basic validation is done here."""
 
+    root_dir: Path = ROOT_DIR
     operation_mode: Literal['train', 'inference'] = Field(
         default='train',
         description="General parameter that defines whether a model will be trained, or if a model will be applied for inference"
@@ -23,8 +25,10 @@ class General(BaseModel):
 
 
 class Train(BaseModel):
+    root_dir : Path
     operation_mode: str
     dataset_name: str
+    input_shape: Tuple[int, int] = None
     encoder_name: Literal['UNet', 'EfficientNetB7'] = Field(
         default='UNet',
         description="Type of model architecture forming the encoder section of U-Net"
@@ -119,7 +123,7 @@ class Train(BaseModel):
         default=True,
         description="Print out the model summary from Keras to a log file in the results directory"
     )
-    results_dir: Optional[str] = Field(
+    results_dir: Optional[str | Path] = Field(
         default=None,
         description="Path for results directory relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
     )
@@ -216,7 +220,7 @@ class Train(BaseModel):
         if img_stems != ann_stems:
             unpaired_stems = img_stems ^ ann_stems # get disjointed elements (unique to each set)
             raise ValueError(f'Found unpaired image or annotation files with filenames {unpaired_stems}')
-
+        
         return dataset_name
     
     @field_validator('batch_size', mode='after')
@@ -253,7 +257,6 @@ class Train(BaseModel):
         """Checks many aspects of the train-val splitting when training single models and doing cross validation. It applies the logical tree from the docs"""
         
         # dataset has already been validated since field_validators run first
-        print()
         data_dir = ROOT_DIR / 'data' / self.dataset_name / 'images'
         img_stems = [file.stem for file in data_dir.iterdir()]
         img_stems_set = set(img_stems)
@@ -332,12 +335,37 @@ class Train(BaseModel):
                 self.results_dir += '_crossval'
             self.results_dir += now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
         
-        self.results_dir = str(ROOT_DIR / self.results_dir)
+        self.results_dir = ROOT_DIR / self.results_dir
+
+        return self
+    
+    @model_validator(mode='after')
+    def get_image_shape(self) -> 'Train':
+        """Get the image shape for model instantiation and make sure it is consistent"""
+        
+        data_dir = ROOT_DIR / 'data' / self.dataset_name
+
+        # load each image or annotation and get the array shape; len(set)=1is found
+        img_shapes = {cv.imread(str(img_path), cv.IMREAD_GRAYSCALE).shape for img_path in (data_dir / 'images').iterdir()}
+        ann_shapes = {cv.imread(str(ann_path), cv.IMREAD_GRAYSCALE).shape for ann_path in (data_dir / 'annotations').iterdir()}
+        img_shape = next(iter(img_shapes))
+        ann_shape = next(iter(ann_shapes))
+
+        # make sure all images and annotations have only one shape 
+        if len(img_shapes) > 1:
+            raise KeyError(f"Expected all images to have the same shape. Got shapes {img_shapes}")
+        elif len(ann_shapes) > 1:
+            raise KeyError(f"Expected all annotations to have the same shape. Got shapes {ann_shapes}")
+        elif img_shape != ann_shape:
+            raise KeyError(f"Expected images and annotations to have the same shape. Got an image shape of `{img_shape}` and an annotation shape of `{ann_shape}`")
+        else:
+            self.input_shape = img_shape
 
         return self
 
-
+            
 class Inference(BaseModel):
+    root_dir: Path
     operation_mode: str
     dataset_name: str
     model_path: str = Field(
@@ -411,7 +439,7 @@ class Inference(BaseModel):
         str(ROOT_DIR / self.results_dir)
 
         return self
-
+    
 
 def check_files(file_set: set, master_set: set, set_type: str):
     """Checks if all files in a set exist in a provided directory"""
@@ -420,14 +448,14 @@ def check_files(file_set: set, master_set: set, set_type: str):
         raise ValueError(f"Could not find files with the names {missing_fns} in the dataset given in `{set_type}_set")
 
 
-def validate(input_configs: dict):
+def validate(input_configs: dict) -> dict:
     """Generate Pydantic models and validate input"""
     general = General.model_validate(input_configs)
 
     # select validator specific to the operation mode
     if general.operation_mode == 'train':
-        output_configs = Train.model_validate(input_configs)
+        output_configs = Train.model_validate(general.model_dump())
     else:
-        output_configs = Inference.model_validate(input_configs)
+        output_configs = Inference.model_validate(general.model_dump())
 
     return output_configs.model_dump()
