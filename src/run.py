@@ -183,7 +183,7 @@ class Operations:
 
         with open(self.configs['results_dir'] / 'trainable.out', 'w') as f:
             f.write(f"{'Layer':<35} {'Trainable':<20}\n")
-            f.write("=" * 40 + "\n")
+            f.write("=" * 50 + "\n")
             for layer in self.model.layers:
                 f.write(f"{layer.name:<35} {str(layer.trainable):<20}\n")
 
