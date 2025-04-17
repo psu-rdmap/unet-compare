@@ -27,10 +27,10 @@ def print_save_configs(configs : dict):
     configs['results_dir'].mkdir()
     
     # print input to user for confirmation
-    print('-'*50 + ' User Input ' + '-'*75)
+    print('-'*60 + ' User Input ' + '-'*60)
     for key, val in configs.items():
         print(key + ':', val)
-    print('-'*137)
+    print('-'*132)
 
     # save configs into results dir for reference
     with open(configs['results_dir'] / 'configs.json', 'w') as con:
@@ -112,7 +112,7 @@ def cv_plot_results(configs : dict):
 
     # paths
     loss_save_path = configs['results_dir'] / 'loss.png'
-    metrics_save_path = configs['results'] / 'metrics.png'
+    metrics_save_path = configs['results_dir'] / 'metrics.png'
 
     # get fold directory names and sort them using natural sorting
     fold_dirs = glob(str(configs['results_dir'] / 'fold_*'))

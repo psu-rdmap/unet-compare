@@ -8,7 +8,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['PYCARET_CUSTOM_LOGGING_LEVEL'] = 'CRITICAL'
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-import argparse, json, shutil, gc
+import argparse, json, shutil, gc, sys
 import tensorflow as tf
 from keras.api.optimizers import Adam
 from keras.api.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
@@ -107,7 +107,7 @@ class Operations:
         # save original results directory
         top_level_results = self.configs['results_dir']
         
-        print(f"Starting cross validation with {self.configs['num_folds']} folds...\n")
+        print(f"\nStarting cross validation with {self.configs['num_folds']} folds...\n")
 
         # loop through folds
         for fold in range(self.configs['num_folds']):
@@ -171,6 +171,10 @@ class Operations:
             # save predictions
             utils.save_preds(preds, save_paths)
 
+    def save_model_summary(self):
+        with open(self.configs['results_dir'] / 'model_summary.out', 'w') as sys.stdout:
+            self.model.summary()
+
 
 def main():
     """Validates configs and instantiates operations class"""
@@ -194,6 +198,9 @@ def main():
             operations.crossval_loop()
         else:
             operations.single_loop()
+
+        if configs['model_summary']:
+            operations.save_model_summary()
     else:
         operations.inference()
     
