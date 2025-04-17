@@ -197,7 +197,7 @@ def augment_single_image(path : Path):
 def parse_image(img_path: tf.Tensor, img_ext: str, ann_ext: str) -> tuple[tf.Tensor, tf.Tensor]:
     # read image and load it into 3 channels (pre-trained backbones require 3) and normalize it
     image = tf.io.read_file(img_path)
-    image = tf.image.decode_image(image, channels=3)
+    image = tf.image.decode_png(image, channels=3)
     image = tf.cast(image, tf.float32) / 255.0
     
     try:
@@ -205,7 +205,7 @@ def parse_image(img_path: tf.Tensor, img_ext: str, ann_ext: str) -> tuple[tf.Ten
         ann_path = tf.strings.regex_replace(img_path, 'images', 'annotations')
         ann_path = tf.strings.regex_replace(ann_path, img_ext, ann_ext)
         annotation = tf.io.read_file(ann_path)
-        annotation = tf.image.decode_image(annotation, channels=1)
+        annotation = tf.image.decode_png(annotation, channels=1)
         annotation = tf.cast(annotation, tf.float32) / 255.0
         return image, annotation
     except:

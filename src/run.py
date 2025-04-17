@@ -13,7 +13,7 @@ from keras.api.optimizers import Adam
 from keras.api.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
 from keras.api.saving import load_model
 from keras import backend as K
-import input_validator, dataloader_new, models, utils
+import input_validator, dataloader, models, utils
 
 # show if a gpu is available
 print("\nNum GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
