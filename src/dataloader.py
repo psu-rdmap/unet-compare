@@ -5,7 +5,6 @@ from natsort import os_sorted
 from glob import glob
 import cv2 as cv
 import tensorflow as tf
-import keras
 
 AUTOTUNE = tf.data.AUTOTUNE
 tf.random.set_seed(3051)

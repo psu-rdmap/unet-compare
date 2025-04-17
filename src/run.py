@@ -32,7 +32,7 @@ class Operations:
 
     def single_loop(self):
         # load dataset and model
-        self.dataset = dataloader_new.create_train_dataset(self.configs)
+        self.dataset = dataloader.create_train_dataset(self.configs)
         self.model = models.load_UNet(self.configs)
         self.model.compile(
             optimizer = Adam(learning_rate=self.configs['learning_rate']), 
@@ -70,7 +70,7 @@ class Operations:
 
         # load best model and inference train/val sets
         self.model = load_model(str(self.configs['results_dir'] / 'best_model.keras'))
-        self.dataset = dataloader_new.create_train_val_inference_dataset(self.configs)
+        self.dataset = dataloader.create_train_val_inference_dataset(self.configs)
         self.inference()
 
         # plot metrics
@@ -134,7 +134,7 @@ class Operations:
         else:
             # load model and dataset
             self.model = load_model(str(self.configs['root_dir'] / self.configs['model_path']))
-            self.dataset = dataloader_new.create_inference_dataset(self.configs)
+            self.dataset = dataloader.create_inference_dataset(self.configs)
 
             # process dataset
             preds = self.model.predict(self.dataset['dataset'])

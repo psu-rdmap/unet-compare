@@ -25,7 +25,7 @@ class General(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    
+
 
 class Train(BaseModel):
     root_dir : Path
@@ -465,8 +465,8 @@ def validate(input_configs: dict) -> dict:
 
     # select validator specific to the operation mode
     if general.operation_mode == 'train':
-        output_configs = Train.model_validate(input_configs)
+        output_configs = Train.model_validate(general.model_dump())
     else:
-        output_configs = Inference.model_validate(input_configs)
+        output_configs = Inference.model_validate(general.model_dump())
 
     return output_configs.model_dump()
