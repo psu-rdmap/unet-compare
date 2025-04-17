@@ -177,9 +177,13 @@ class Operations:
 
     def save_model_summary(self):
         """Writes the model summary to a file after training"""
-        
+
         with open(self.configs['results_dir'] / 'model_summary.out', 'w') as f:
             self.model.summary(print_fn=lambda x: f.write(x + '\n'))
+
+        with open(self.configs['results_dir'] / 'trainable.out', 'w') as f:
+            for layer in self.model.layers:
+                f.write(f"Layer: {layer.name}, Trainable: {layer.trainable}\n")
 
 
 def main():
