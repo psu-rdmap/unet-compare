@@ -123,7 +123,7 @@ def split_data(configs: dict) -> Tuple[List[str], List[str]]:
     train_fns, val_fns = configs['training_set'], configs['validation_set']
 
     # Case 1: only training files provided
-    if train_fns and not val_fns:
+    if (train_fns is not None) and (val_fns is None):
         # split it with the given percentage
         if configs['auto_split']:
             random.shuffle(train_fns)
@@ -135,13 +135,13 @@ def split_data(configs: dict) -> Tuple[List[str], List[str]]:
             return train_fns, val_fns
     
     # Case 2: only validation files provided
-    elif not train_fns and val_fns:
+    elif (train_fns is None) and (val_fns is not None):
         # use remaining files
         train_fns = os_sorted(list(set(all_fns) - set(val_fns)))
         return train_fns, val_fns
     
     # Case 3: both training and validation files provided
-    elif train_fns and val_fns:
+    elif (train_fns is not None) and (val_fns is not None):
         # do nothing
         return train_fns, val_fns
 

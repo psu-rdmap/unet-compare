@@ -88,7 +88,7 @@ class Operations:
         self.inference()
 
         # plot metrics
-        print("Plotting metrics...\n")
+        print("\nPlotting metrics...\n")
         utils.plot_results(self.configs)
 
         print("Cleaning up...\n")
