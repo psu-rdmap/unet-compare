@@ -77,8 +77,8 @@ def create_train_val_inference_dataset(configs: dict) -> dict:
     img_ext = next(iter({file.suffix for file in (data_dir / 'images').iterdir()}))
 
     # Step 1: convert filenames to full paths
-    train_img_paths = [data_dir / 'images' / (file + img_ext) for file in configs['training_set']]
-    val_img_paths = [data_dir / 'images' / (file + img_ext) for file in configs['validation_set']]
+    train_img_paths = [str(data_dir / 'images' / (file + img_ext)) for file in configs['training_set']]
+    val_img_paths = [str(data_dir / 'images' / (file + img_ext)) for file in configs['validation_set']]
 
     # Step 2: convert full paths list to tensor
     train_dataset = tf.data.Dataset.from_tensor_slices(train_img_paths)

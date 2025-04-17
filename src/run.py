@@ -14,9 +14,10 @@ from keras.api.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
 from keras.api.saving import load_model
 from keras import backend as K
 import input_validator, dataloader, models, utils
+from pathlib import Path
 
 # show if a gpu is available
-print("\nNum GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), '\n')
 
 # get config file from input
 parser = argparse.ArgumentParser(description='U-Net Training')
@@ -30,9 +31,13 @@ class Operations:
         self.dataset = None
         self.model = None
 
-    def single_loop(self):
+    def single_loop(self): 
         # load dataset and model
+        print(f"Creating dataset from {self.configs['dataset_name']}...\n")
         self.dataset = dataloader.create_train_dataset(self.configs)
+        print(f"Training images: {self.configs['training_set']}")
+        print(f"Validation images: {self.configs['validation_set']}\n")
+        print(f"Loading and compiling {self.configs['encoder_name']}-{self.configs['decoder_name']}...\n")
         self.model = models.load_UNet(self.configs)
         self.model.compile(
             optimizer = Adam(learning_rate=self.configs['learning_rate']), 
@@ -58,6 +63,7 @@ class Operations:
             callbacks.append(EarlyStopping(patience = self.configs['patience']))
         
         # start training
+        print("Training model...\n")
         self.model.fit(
             self.dataset['train_dataset'],
             epochs = self.configs['num_epochs'],
@@ -69,13 +75,16 @@ class Operations:
         )
 
         # load best model and inference train/val sets
+        print("\nInferencing training and validation images with best model...\n")
         self.model = load_model(str(self.configs['results_dir'] / 'best_model.keras'))
         self.dataset = dataloader.create_train_val_inference_dataset(self.configs)
         self.inference()
 
         # plot metrics
+        print("Plotting metrics...\n")
         utils.plot_results(self.configs)
 
+        print("Cleaning up...\n")
         # remove training dataset and clear memory
         shutil.rmtree(self.configs['root_dir'] / 'dataset')
         K.clear_session()
@@ -148,6 +157,8 @@ class Operations:
 
 
 def main():
+    print(f"Loading and validating input configurations file {Path(args.configs).name}\n")
+
     # load config dict
     with open(args.configs, 'r') as f:
         configs: dict = json.load(f)
@@ -165,6 +176,7 @@ def main():
             operations.crossval_loop()
         else:
             operations.single_loop()
+            print("Done.")
     else:
         operations.inference()
 
