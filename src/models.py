@@ -50,7 +50,7 @@ def load_UNet(configs : dict) -> keras.Model:
             for layer in backbone.layers:
                 layer.trainable = False
         else:
-            # freeze specific blocks
+            # freeze specific blocks (or leave the whole model unfrozen if not a list)
             if type(configs['backbone_finetuning']) == list:
                 block_strs = ['block' + str(block_idx) for block_idx in configs['backbone_finetuning']]
                 for layer in backbone.layers:

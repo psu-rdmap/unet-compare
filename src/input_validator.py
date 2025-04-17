@@ -152,7 +152,7 @@ class Train(BaseModel):
         if self.encoder_name == 'UNet' and self.backbone_weights is not None:
             self.backbone_weights == None
             warn("`backbone_weights` should be `null` or ignored when `encoder_name` is `UNet`")
-        elif self.encoder_name == 'EfficientNetB7' and self.backbone_weights is None: 
+        elif self.encoder_name == 'EfficientNetB7' and self.backbone_weights is not None: 
             raise ValueError(f"`backbone_weights` should be `random` or `imagenet` when `encoder_name` is `EfficientNetB7`")
         
         # backbone finetuning should be none when using random weights (UNet or random EfficientNet)
