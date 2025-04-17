@@ -1,4 +1,5 @@
 """
+Aiden Ochoa, 4/2025, RDMAP PSU Research Group
 This module handles the definition of encoder/decoder subnetworks and their connection
 """
 
@@ -11,18 +12,7 @@ from tensorflow.keras.applications import EfficientNetB7
 
 
 def load_UNet(configs : dict) -> keras.Model:
-    """
-    U-Net built with Functional API using either U-Net or EfficientNetB7 encoders and either U-Net or U-Net++ decoders
-
-    Parameters
-    ----------
-    configs : dict
-        Input configs defined in the JSON input file
-
-    Returns
-    -------
-    Keras Functional model representing the UNet : tf.keras.Model 
-    """
+    """U-Net built with Functional API using either U-Net or EfficientNetB7 encoders and either U-Net or U-Net++ decoders"""
 
     enc_filters = configs['encoder_filters']
     dec_filters = configs['decoder_filters']

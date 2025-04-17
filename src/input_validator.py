@@ -1,3 +1,8 @@
+"""
+Aiden Ochoa, 4/2025, RDMAP PSU Research Group
+This module validates the user input configs file and modifies it as necessary
+"""
+
 from pydantic import BaseModel, PositiveInt, NonNegativeInt, PositiveFloat, NonNegativeFloat, ConfigDict, Field, field_validator, model_validator
 from typing import Literal, List, Optional, Tuple
 from pathlib import Path

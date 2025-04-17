@@ -1,5 +1,6 @@
 """
-This module handles all preliminary operations for training including taking input from the user, checking it, and calling the correct mode function
+Aiden Ochoa, 4/2025, RDMAP PSU Research Group
+This module handles all training and inference operations. It has __main__
 """
 
 import os
@@ -26,18 +27,23 @@ args = parser.parse_args()
 
 
 class Operations:
+    """Singleton class for training and inference"""
+
     def __init__(self, configs: dict):
+        """Initialize configs, dataset, and model"""
         self.configs = configs
         self.dataset = None
         self.model = None
 
-    def single_loop(self): 
+    def single_loop(self):
+        """Trains a single model using a training and validation set"""
+
         # load dataset and model
-        print(f"Creating dataset from {self.configs['dataset_name']}...\n")
+        print(f"\nCreating dataset from `{self.configs['dataset_name']}`...\n")
         self.dataset = dataloader.create_train_dataset(self.configs)
         print(f"Training images: {self.configs['training_set']}")
         print(f"Validation images: {self.configs['validation_set']}\n")
-        print(f"Loading and compiling {self.configs['encoder_name']}-{self.configs['decoder_name']}...\n")
+        print(f"Loading and compiling `{self.configs['encoder_name']}-{self.configs['decoder_name']}`...\n")
         self.model = models.load_UNet(self.configs)
         self.model.compile(
             optimizer = Adam(learning_rate=self.configs['learning_rate']), 
@@ -92,14 +98,20 @@ class Operations:
 
 
     def crossval_loop(self):
+        """Trains num_folds models using different non-overlapping validation sets"""
+
         # determine all training and val set combinations given the number of folds
         train_sets, val_sets = utils.create_folds(self.configs['training_set'], self.configs['num_folds'])
         
         # save original results directory
         top_level_results = self.configs['results_dir']
         
+        print(f"Starting cross validation with {self.configs['num_folds']} folds...\n")
+
         # loop through folds
         for fold in range(self.configs['num_folds']):
+            print('-'*50 + ' Fold {} '.format(fold+1) + '-'*50)
+
             # update train/val sets
             self.configs.update({'training_set' : train_sets[fold]})
             self.configs.update({'validation_set' : val_sets[fold]})
@@ -116,13 +128,13 @@ class Operations:
             self.configs.update({'results_dir' : top_level_results})
 
         # plot metrics over all folds
+        print("Plotting cross validation results...\n")
         utils.cv_plot_results(self.configs)
-        
-        # remove previous val from configs
-        self.configs.pop('validation_set')
 
 
     def inference(self):
+        """Either inferences a training-validation pair of images, or just a single set of images"""
+
         if self.configs['operation_mode'] == 'train':
             # process train and val images
             train_preds = self.model.predict(self.dataset['train_dataset'], verbose=2)
@@ -157,7 +169,9 @@ class Operations:
 
 
 def main():
-    print(f"Loading and validating input configurations file {Path(args.configs).name}\n")
+    """Validates configs and instantiates operations class"""
+
+    print(f"Loading and validating input configurations file `{Path(args.configs).name}`...\n")
 
     # load config dict
     with open(args.configs, 'r') as f:
@@ -176,9 +190,11 @@ def main():
             operations.crossval_loop()
         else:
             operations.single_loop()
-            print("Done.")
     else:
         operations.inference()
+    
+    print("Done.")
+
 
 if __name__ == '__main__':
     main()

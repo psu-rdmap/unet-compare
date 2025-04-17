@@ -1,3 +1,8 @@
+"""
+Aiden Ochoa, 4/2025, RDMAP PSU Research Group
+This module handles dataset processing for training and inference
+"""
+
 from typing import Tuple, List
 from pathlib import Path
 import shutil, random, re
@@ -88,8 +93,8 @@ def create_train_val_inference_dataset(configs: dict) -> dict:
     train_dataset = train_dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
     val_dataset = val_dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
 
-    train_dataset.batch(1).prefetch()
-    val_dataset.batch(1).prefetch()
+    train_dataset.batch(1)
+    val_dataset.batch(1)
 
     return {'train_dataset' : train_dataset, 'train_paths' : train_img_paths, 'val_dataset' : val_dataset, 'val_paths' : val_img_paths}
 
@@ -103,7 +108,7 @@ def create_inference_dataset(configs: dict) -> dict[tf.Tensor, list[Path]]:
     # create tensorflow dataset
     dataset = tf.data.Dataset.from_tensor_slices([str(path) for path in data_paths])
     dataset = dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
-    dataset.batch(1).prefetch()
+    dataset.batch(1)
 
     return {'dataset' : dataset, 'data_paths' : data_paths}
 

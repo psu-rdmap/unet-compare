@@ -1,5 +1,6 @@
 """
-This module handles all accessory operations such as plotting and inference
+Aiden Ochoa, 4/2025, RDMAP PSU Research Group
+This module handles all accessory operations such as plotting
 """
 
 from keras.preprocessing.image import save_img
