@@ -388,7 +388,7 @@ class Inference(BaseModel):
     model_path: str = Field(
         description="Path relative to /path/to/unet-compare/ to an existing model to be used for inference"
     )
-    results_dir: Optional[str] = Field(
+    results_dir: Optional[str | Path] = Field(
         default=None,
         description="Path for results directory relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
     )

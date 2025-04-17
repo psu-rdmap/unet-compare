@@ -163,7 +163,7 @@ class Operations:
 
             # process dataset
             print("Generating model predictions...\n")
-            preds = self.model.predict(self.dataset['dataset'])
+            preds = self.model.predict(self.dataset['dataset'], verbose=2)
 
             # define output directories and paths
             print("\nSaving model predictions...\n")
