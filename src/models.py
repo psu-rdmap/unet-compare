@@ -27,7 +27,7 @@ def load_UNet(configs : dict) -> keras.Model:
     enc_filters = configs['encoder_filters']
     dec_filters = configs['decoder_filters']
     batchnorm = configs['batchnorm']
-    l2_reg = configs['l2_reg']
+    l2_reg = configs['L2_regularization_strength']
 
     input = keras.Input(shape = configs['input_shape'], name = 'main_input')
 

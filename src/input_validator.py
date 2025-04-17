@@ -127,6 +127,10 @@ class Train(BaseModel):
         default=None,
         description="Path for results directory relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
     )
+    batchnorm: bool = Field(
+        default=False,
+        description="Option to use batch normalization after convolution layers in the UNet encoder/decoder"
+    )
 
     @model_validator(mode='after')
     def pretrained_backbone(self) -> 'Train':
@@ -346,8 +350,8 @@ class Train(BaseModel):
         data_dir = ROOT_DIR / 'data' / self.dataset_name
 
         # load each image or annotation and get the array shape; len(set)=1is found
-        img_shapes = {cv.imread(str(img_path), cv.IMREAD_GRAYSCALE).shape for img_path in (data_dir / 'images').iterdir()}
-        ann_shapes = {cv.imread(str(ann_path), cv.IMREAD_GRAYSCALE).shape for ann_path in (data_dir / 'annotations').iterdir()}
+        img_shapes = {cv.imread(str(img_path), cv.IMREAD_COLOR).shape for img_path in (data_dir / 'images').iterdir()}
+        ann_shapes = {cv.imread(str(ann_path), cv.IMREAD_COLOR).shape for ann_path in (data_dir / 'annotations').iterdir()}
         img_shape = next(iter(img_shapes))
         ann_shape = next(iter(ann_shapes))
 
