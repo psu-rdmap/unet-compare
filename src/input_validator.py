@@ -457,7 +457,7 @@ class Inference(BaseModel):
             now = datetime.now()
             self.results_dir = 'results_' + self.dataset_name + '_' + self.operation_mode + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
         
-        str(ROOT_DIR / self.results_dir)
+        self.results_dir = ROOT_DIR / self.results_dir
 
         return self
     
