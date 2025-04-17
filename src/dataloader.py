@@ -16,6 +16,22 @@ random.seed(229)
 AUTOTUNE = tf.data.AUTOTUNE
 tf.random.set_seed(3051)
 
+def create_train_dataset(configs: dict) -> dict:
+    """Returns a dict with keys:
+    - train
+    - validation
+    - train_steps
+    - val_steps
+    """
+    pass
+
+def create_inference_dataset(configs: dict):
+    pass
+
+
+
+
+
 
 def create_dataset(configs : dict) -> tuple[dict, int, int]:
     """
@@ -34,7 +50,7 @@ def create_dataset(configs : dict) -> tuple[dict, int, int]:
     """
     
     # create directory structure and remove previous dataset if it was never deleted
-    ds_path = join(configs['root'], 'dataset')
+    dataset_path = join(configs['root'], 'dataset')
     if isdir(ds_path):
         shutil.rmtree(ds_path)
     train_val_paths = create_dstree(ds_path)

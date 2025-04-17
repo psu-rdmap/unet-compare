@@ -10,7 +10,7 @@ from blocks import ConvBlock, UpsampleBlock
 from tensorflow.keras.applications import EfficientNetB7
 
 
-def UNet(configs : dict):
+def load_UNet(configs : dict) -> keras.Model:
     """
     U-Net built with Functional API using either U-Net or EfficientNetB7 encoders and either U-Net or U-Net++ decoders
 

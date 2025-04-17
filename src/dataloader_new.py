@@ -5,13 +5,14 @@ from natsort import os_sorted
 from glob import glob
 import cv2 as cv
 import tensorflow as tf
+import keras
 
 AUTOTUNE = tf.data.AUTOTUNE
 tf.random.set_seed(3051)
 random.seed(229)
 
 
-def create_train_dataset(configs: dict) -> dict:
+def create_train_dataset(configs: dict) -> Tuple[dict, dict]:
     """Creates the training dataset based on the configs"""
 
     data_dir: Path = configs['root_dir'] / 'data' / configs['dataset_name']
@@ -68,7 +69,44 @@ def create_train_dataset(configs: dict) -> dict:
     train_steps = len(list((dataset_dir / 'images' / 'train').iterdir())) // configs['batch_size']
     val_steps = len(list((dataset_dir / 'images' / 'val').iterdir())) // 1
 
-    return {'train_dataset' : train_dataset, 'val_dataset' : val_dataset, 'train_steps' : train_steps, 'val_steps' : val_steps}
+    return configs, {'train_dataset' : train_dataset, 'val_dataset' : val_dataset, 'train_steps' : train_steps, 'val_steps' : val_steps}
+
+
+def create_train_val_inference_dataset(configs: dict) -> dict:
+
+    data_dir: Path = configs['root_dir'] / 'data' / configs['dataset_name']
+    img_ext = next(iter({file.suffix for file in (data_dir / 'images').iterdir()}))
+
+    # Step 1: convert filenames to full paths
+    train_img_paths = [data_dir / 'images' / (file + img_ext) for file in configs['training_set']]
+    val_img_paths = [data_dir / 'images' / (file + img_ext) for file in configs['validation_set']]
+
+    # Step 2: convert full paths list to tensor
+    train_dataset = tf.data.Dataset.from_tensor_slices(train_img_paths)
+    val_dataset = tf.data.Dataset.from_tensor_slices(val_img_paths)
+
+    # Step 3: load images and batch them
+    train_dataset = train_dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
+    val_dataset = val_dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
+
+    train_dataset.batch(1).prefetch()
+    val_dataset.batch(1).prefetch()
+
+    return {'train_dataset' : train_dataset, 'train_paths' : train_img_paths, 'val_dataset' : val_dataset, 'val_paths' : val_img_paths}
+
+
+def create_inference_dataset(configs: dict) -> dict[tf.Tensor, list[Path]]:
+     # define path to images
+    data_dir= configs['root_dir'] / 'data' / configs['dataset_name']
+    data_paths = [path for path in data_dir.iterdir()]
+    img_ext = next(iter(set(data_paths)))
+
+    # create tensorflow dataset
+    dataset = tf.data.Dataset.from_tensor_slices([str(path) for path in data_paths])
+    dataset = dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
+    dataset.batch(1).prefetch()
+
+    return {'dataset' : dataset, 'data_paths' : data_paths}
 
 
 """Miscellaneous functions"""
@@ -156,20 +194,20 @@ def augment_single_image(path : Path):
     cv.imwrite(str(path.parent / (path.stem + '_8' + path.suffix)), image_8)
 
 
-def parse_image(img_path: tf.string, img_ext: str, ann_ext: str) -> tuple[tf.Tensor, tf.Tensor, tf.string]:
-    # read image and load it into 3 channels (pre-trained backbones require 3)
+def parse_image(img_path: tf.Tensor, img_ext: str, ann_ext: str) -> tuple[tf.Tensor, tf.Tensor]:
+    # read image and load it into 3 channels (pre-trained backbones require 3) and normalize it
     image = tf.io.read_file(img_path)
     image = tf.image.decode_image(image, channels=3)
-    
-    # adjust path to lead to the corresponding annotation and load it
-    ann_path = tf.strings.regex_replace(img_path, 'images', 'annotations')
-    ann_path = tf.strings.regex_replace(ann_path, img_ext, ann_ext)
-    annotation = tf.io.read_file(ann_path)
-    annotation = tf.image.decode_image(annotation, channels=1)
-
-    # convert tensor objects to floats and normalize images ([0,255] -> [0.0, 1.0])
     image = tf.cast(image, tf.float32) / 255.0
-    annotation = tf.cast(annotation, tf.float32) / 255.0
-
-    # return two Tensor objects with loaded image and annotation data as well as the image filename
-    return image, annotation, img_path
+    
+    try:
+        # adjust path to lead to the corresponding annotation and load it
+        ann_path = tf.strings.regex_replace(img_path, 'images', 'annotations')
+        ann_path = tf.strings.regex_replace(ann_path, img_ext, ann_ext)
+        annotation = tf.io.read_file(ann_path)
+        annotation = tf.image.decode_image(annotation, channels=1)
+        annotation = tf.cast(annotation, tf.float32) / 255.0
+        return image, annotation
+    except:
+        # if ann_ext is None, we just want the image
+        return image

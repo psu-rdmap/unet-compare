@@ -406,6 +406,10 @@ class Inference(BaseModel):
                 unallowed_files.append(file)
         if len(unallowed_files):
             raise ValueError(f'The files {unallowed_files} have invalid file types')
+        
+        # make sure images have the same file type
+        if len(img_exts) > 1:
+            raise KeyError(f"Expected all files to have the same file type. Got mixed types {img_exts}")
     
         return dataset_name
 

@@ -2,40 +2,17 @@
 This module handles all accessory operations such as plotting and inference
 """
 
-import os
-import tensorflow as tf
 from keras.preprocessing.image import save_img
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import math
+import math, json
 from natsort import os_sorted
 from glob import glob
+from pathlib import Path
 
 
-def parse_inference_image(img_path : str) -> tf.Tensor:
-    """
-    Given the full path to an image (/path/to/image.ext), load it into a tensor
-
-    Parameters
-    ----------
-    img_path : str
-        Full path to image file
-    
-    Returns
-    -------
-    Loaded image : tf.Tensor
-    """
-
-    # read image and load it into 3 channels (pre-trained backbones require 3)
-    image = tf.io.read_file(img_path)
-    image = tf.image.decode_png(image, channels=3)
-
-    # convert tensor objects to floats and normalize images ([0,255] -> [0.0, 1.0]) and return tensor
-    return tf.cast(image, tf.float32) / 255.0
-
-
-def save_preds(preds : tf.Tensor, save_fns : list):
+def save_preds(preds : list[np.array], save_paths : list[Path]):
     """
     Save each prediction from a tensor of predictions
 
@@ -47,52 +24,23 @@ def save_preds(preds : tf.Tensor, save_fns : list):
         List of corresponding image filenames
     """
     
-    for idx, pred in enumerate(preds):
-        save_img(save_fns[idx], pred)
+    for i, pred in enumerate(preds):
+        save_img(str(save_paths[i]), pred)
 
 
-def inference_ds(configs : dict, model : tf.keras.Model):
-    """
-    Inferences and saves every training/validation image after training
+def print_configs(configs : dict):
+    # create top-level results directory
+    configs['results_dir'].mkdir()
     
-    Parameters
-    ----------
-    configs : dict
-        Input configs given by the user
-    model : tf.keras.Model
-        Trained neural network
-    """
+    # print input to user for confirmation
+    print('-'*50 + ' User Input ' + '-'*75)
+    for key, val in configs.items():
+        print(key + ':', val)
+    print('-'*137)
 
-    data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
-
-    # define training and validation dataset
-    train_ds = tf.data.Dataset.from_tensor_slices([data_path + img + configs['image_ext'] for img in configs['train']])
-    val_ds = tf.data.Dataset.from_tensor_slices([data_path + img + configs['image_ext'] for img in configs['val']])
-
-    # replace every image path in the training and validation directories with a loaded image and annotation pair
-    train_ds = train_ds.map(parse_inference_image)
-    val_ds = val_ds.map(parse_inference_image)
-
-    # batch data
-    train_ds = train_ds.batch(1)
-    val_ds = val_ds.batch(1)
-
-    # get predictions
-    train_preds = model.predict(train_ds, verbose=1)
-    val_preds = model.predict(val_ds, verbose=1)
-
-    # define output directories
-    train_save_dir = os.path.join(configs['results'], 'train_preds')
-    os.mkdir(train_save_dir)
-    train_save_fns = [os.path.join(train_save_dir, fn + '.png') for fn in configs['train']]
-
-    val_save_dir = os.path.join(configs['results'], 'val_preds')
-    os.mkdir(val_save_dir)
-    val_save_fns = [os.path.join(val_save_dir, fn + '.png') for fn in configs['val']]
-
-    # save train and val preds
-    save_preds(train_preds, train_save_fns)
-    save_preds(val_preds, val_save_fns)
+    # save configs into results dir for reference
+    with open(configs['results_dir'] / 'configs.json', 'w') as con:
+        json.dump(configs, con)
 
 
 def plot_results(configs : dict):
@@ -106,8 +54,8 @@ def plot_results(configs : dict):
     """
 
     # paths
-    metrics_path = os.path.join(configs['results'], 'metrics.csv')
-    plot_save_path = os.path.join(configs['results'], 'metrics.png')
+    metrics_path = configs['results_dir'] / 'metrics.csv'
+    plot_save_path = configs['results_dir'] / 'metrics.png'
 
     # read metrics into dataframe
     metrics = pd.read_csv(metrics_path)
@@ -152,7 +100,7 @@ def plot_results(configs : dict):
         axs[i].grid(visible=True)
         axs[i].legend()     
 
-    fig.savefig(plot_save_path, bbox_inches="tight")
+    fig.savefig(str(plot_save_path), bbox_inches="tight")
 
 
 def add_f1(metrics : pd.DataFrame, val = False) -> pd.DataFrame:
@@ -193,18 +141,18 @@ def cv_plot_results(configs : dict):
     """
 
     # paths
-    loss_save_path = os.path.join(configs['results'], 'loss.png')
-    metrics_save_path = os.path.join(configs['results'], 'metrics.png')
+    loss_save_path = configs['results_dir'] / 'loss.png'
+    metrics_save_path = configs['results'] / 'metrics.png'
 
     # get fold directory names and sort them using natural sorting
-    fold_dirs = glob(os.path.join(configs['results'], 'fold_*/'))
+    fold_dirs = glob(str(configs['results_dir'] / 'fold_*'))
     fold_dirs = os_sorted(fold_dirs)
 
     # dict to hold dataframes for each fold
     all_metrics = []
     for fold in range(len(fold_dirs)):
         # get metrics from csv
-        fold_metrics = pd.read_csv(os.path.join(fold_dirs[fold], 'metrics.csv'))
+        fold_metrics = pd.read_csv(str(fold_dirs[fold] / 'metrics.csv'))
 
         # add f1 columns to the dataframe
         fold_metrics['f1'] = add_f1(fold_metrics)
@@ -242,7 +190,7 @@ def cv_plot_results(configs : dict):
         ax.grid(visible=True)
         ax.legend()
 
-    fig.savefig(loss_save_path, bbox_inches="tight")
+    fig.savefig(str(loss_save_path), bbox_inches="tight")
 
     # get mean and stdev across all folds
     num_metrics = np.shape(all_metrics)[-1]
@@ -284,7 +232,7 @@ def cv_plot_results(configs : dict):
         axs[i].grid(visible=True)
         axs[i].legend()
 
-    fig.savefig(metrics_save_path, bbox_inches="tight")
+    fig.savefig(str(metrics_save_path), bbox_inches="tight")
 
 
 def create_folds(img_list : list, num_folds : int) -> tuple[list, list]:
