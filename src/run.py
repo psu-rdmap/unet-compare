@@ -175,8 +175,8 @@ class Operations:
             utils.save_preds(preds, save_paths)
 
     def save_model_summary(self):
-        with open(self.configs['results_dir'] / 'model_summary.out', 'w') as sys.stdout:
-            self.model.summary()
+        with open(self.configs['results_dir'] / 'model_summary.out', 'w') as f:
+            self.model.summary(print_fn=lambda x: f.write(x + '\n'))
 
 
 def main():
