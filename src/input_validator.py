@@ -169,7 +169,7 @@ class Train(BaseModel):
             assert np.all(np.array(self.backbone_finetuning) < 8), "Block indices must be from 0 to 7 in `backbone_finetuning`"
 
         # default value is True (unfrozen backbone) if null
-        if self.encoder_name == 'EfficientNetB7' and self.backbone_finetuning is None:
+        if self.encoder_name == 'EfficientNetB7' and self.backbone_finetuning is None and self.backbone_weights == 'imagenet':
             warn(f"Expected `backbone_finetuning` to be an `array`, `true`, or `false`. Got `null` and defaulting to `True` (unfrozen)")
             self.backbone_finetuning = True
 
