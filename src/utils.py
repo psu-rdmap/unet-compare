@@ -122,7 +122,7 @@ def cv_plot_results(configs : dict):
     all_metrics = []
     for fold in range(len(fold_dirs)):
         # get metrics from csv
-        fold_metrics = pd.read_csv(str(fold_dirs[fold] / 'metrics.csv'))
+        fold_metrics = pd.read_csv(str(Path(fold_dirs[fold]) / 'metrics.csv'))
 
         # add f1 columns to the dataframe
         fold_metrics['f1'] = add_f1(fold_metrics)

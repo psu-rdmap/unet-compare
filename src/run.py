@@ -111,7 +111,7 @@ class Operations:
 
         # loop through folds
         for fold in range(self.configs['num_folds']):
-            print('-'*50 + ' Fold {} '.format(fold+1) + '-'*50)
+            print('-'*62 + ' Fold {} '.format(fold+1) + '-'*62)
 
             # update train/val sets
             self.configs.update({'training_set' : train_sets[fold]})
@@ -157,13 +157,16 @@ class Operations:
 
         else:
             # load model and dataset
+            print("\nLoading data and model...\n")
             self.model = load_model(str(self.configs['root_dir'] / self.configs['model_path']))
             self.dataset = dataloader.create_inference_dataset(self.configs)
 
             # process dataset
+            print("Generating model predictions...\n")
             preds = self.model.predict(self.dataset['dataset'])
 
             # define output directories and paths
+            print("\nSaving model predictions...\n")
             save_dir = self.configs['results_dir'] / 'preds'
             save_dir.mkdir()
             save_paths = [save_dir / (file.stem + '.png') for file in self.dataset['data_paths']]
