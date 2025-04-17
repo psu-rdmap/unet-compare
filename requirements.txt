@@ -4,3 +4,4 @@ matplotlib==3.9.2
 pandas==2.2.2
 natsort==8.4.0
 keras==3.8.0
+pydantic==2.11.3

@@ -28,7 +28,7 @@ def save_preds(preds : list[np.array], save_paths : list[Path]):
         save_img(str(save_paths[i]), pred)
 
 
-def print_configs(configs : dict):
+def print_save_configs(configs : dict):
     # create top-level results directory
     configs['results_dir'].mkdir()
     
@@ -40,6 +40,9 @@ def print_configs(configs : dict):
 
     # save configs into results dir for reference
     with open(configs['results_dir'] / 'configs.json', 'w') as con:
+        # make Path objects strings for serialization
+        configs['root_dir'] = str(configs['root_dir'])
+        configs['results_dir'] = str(configs['results_dir'])
         json.dump(configs, con)
 
 

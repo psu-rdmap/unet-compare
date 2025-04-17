@@ -12,7 +12,7 @@ tf.random.set_seed(3051)
 random.seed(229)
 
 
-def create_train_dataset(configs: dict) -> Tuple[dict, dict]:
+def create_train_dataset(configs: dict) -> dict:
     """Creates the training dataset based on the configs"""
 
     data_dir: Path = configs['root_dir'] / 'data' / configs['dataset_name']
@@ -69,7 +69,7 @@ def create_train_dataset(configs: dict) -> Tuple[dict, dict]:
     train_steps = len(list((dataset_dir / 'images' / 'train').iterdir())) // configs['batch_size']
     val_steps = len(list((dataset_dir / 'images' / 'val').iterdir())) // 1
 
-    return configs, {'train_dataset' : train_dataset, 'val_dataset' : val_dataset, 'train_steps' : train_steps, 'val_steps' : val_steps}
+    return {'train_dataset' : train_dataset, 'val_dataset' : val_dataset, 'train_steps' : train_steps, 'val_steps' : val_steps}
 
 
 def create_train_val_inference_dataset(configs: dict) -> dict:

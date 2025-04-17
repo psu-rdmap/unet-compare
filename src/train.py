@@ -32,7 +32,7 @@ class Operations:
 
     def single_loop(self):
         # load dataset and model
-        self.configs, self.dataset = dataloader_new.create_train_dataset(self.configs)
+        self.dataset = dataloader_new.create_train_dataset(self.configs)
         self.model = models.load_UNet(self.configs)
         self.model.compile(
             optimizer = Adam(learning_rate=self.configs['learning_rate']), 
@@ -150,18 +150,18 @@ class Operations:
 def main():
     # load config dict
     with open(args.configs, 'r') as f:
-        configs = json.load(f)
+        configs: dict = json.load(f)
 
     # validate and print configs
-    configs = input_validator.validate(configs)
-    utils.print_save_configs(configs)
+    input_validator.validate(configs)
+    utils.print_save_configs(configs.copy())
 
     # start operations
     operations = Operations(configs)
 
     # training or inference
     if configs['operation_mode'] == 'train':
-        if configs['cross_val']:
+        if configs['cross_validation']:
             operations.crossval_loop()
         else:
             operations.single_loop()
