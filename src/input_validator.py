@@ -1,4 +1,4 @@
-from pydantic import BaseModel, PositiveInt, NonNegativeInt, PositiveFloat, NonNegativeFloat, Field, field_validator, model_validator
+from pydantic import BaseModel, PositiveInt, NonNegativeInt, PositiveFloat, NonNegativeFloat, ConfigDict, Field, field_validator, model_validator
 from typing import Literal, List, Optional, Tuple
 from pathlib import Path
 from warnings import warn
@@ -22,7 +22,10 @@ class General(BaseModel):
         min_length=2,
         description="Dataset subdirectory prefix corresponding to unet-compare/data/<dataset_name>/"
     )
-
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    
 
 class Train(BaseModel):
     root_dir : Path
