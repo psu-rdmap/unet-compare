@@ -142,11 +142,11 @@ class Operations:
 
             # define output directories
             train_save_dir = self.configs['results_dir'] / 'train_preds'
-            val_save_dir = self.configs['results'] / 'val_preds'
+            val_save_dir = self.configs['results_dir'] / 'val_preds'
 
             # define pred save file paths
-            train_save_paths = [train_save_dir / (file.stem + '.png') for file in self.dataset['train_img_paths']]
-            val_save_paths = [val_save_dir / (file.stem + '.png') for file in self.dataset['val_img_paths']]
+            train_save_paths = [train_save_dir / (file.stem + '.png') for file in self.dataset['train_paths']]
+            val_save_paths = [val_save_dir / (file.stem + '.png') for file in self.dataset['val_paths']]
 
             # save predictions
             utils.save_preds(train_preds, train_save_paths)

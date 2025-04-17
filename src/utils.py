@@ -14,22 +14,15 @@ from pathlib import Path
 
 
 def save_preds(preds : list[np.array], save_paths : list[Path]):
-    """
-    Save each prediction from a tensor of predictions
-
-    Parameters
-    ----------
-    preds : tf.Tensor
-        Tensor of predictions with shape (N, H, W, 1) where N is the number of predictions
-    save_fns : list
-        List of corresponding image filenames
-    """
+    """Save inference predictions from model.predict()"""
     
     for i, pred in enumerate(preds):
         save_img(str(save_paths[i]), pred)
 
 
 def print_save_configs(configs : dict):
+    """Creates the results directory, prints the input configs after validation, and saves a copy to results"""
+    
     # create top-level results directory
     configs['results_dir'].mkdir()
     
@@ -48,14 +41,7 @@ def print_save_configs(configs : dict):
 
 
 def plot_results(configs : dict):
-    """
-    Loads training metrics from a single training loop, plots them, and saves it into the results directory
-
-    Parameters
-    ----------
-    configs : dict
-        Input configs given by the user
-    """
+    """Loads training metrics from a single training loop, plots them, and saves it to the results directory"""
 
     # paths
     metrics_path = configs['results_dir'] / 'metrics.csv'
@@ -108,20 +94,7 @@ def plot_results(configs : dict):
 
 
 def add_f1(metrics : pd.DataFrame, val = False) -> pd.DataFrame:
-    """
-    Calculates the f1-score element-wise given columns of the dataframe
-    
-    Parameters
-    ----------
-    metrics : pd.DataFrame
-        Metrics from the csv file made while training
-    val : bool
-        Whether the metrics correspond to the validation (true) or training (false) set 
-    
-    Returns
-    -------
-    New metrics DataFrame column with f1 values : pd.DataFrame
-    """
+    """Calculates the f1-score element-wise given columns of a Pandas metrics dataframe"""
 
     if val == True:
         p = 'val_Precision'
@@ -135,14 +108,7 @@ def add_f1(metrics : pd.DataFrame, val = False) -> pd.DataFrame:
 
 
 def cv_plot_results(configs : dict):
-    """
-    Loads in metrics for every fold, plots loss curves together, and plots statistics for each epoch
-
-    Parameters
-    ----------
-    configs : dict
-        Input configs given by the user
-    """
+    """Loads in metrics from every cross validation fold, plots loss curves together, and plots statistics for each epoch"""
 
     # paths
     loss_save_path = configs['results_dir'] / 'loss.png'
@@ -240,21 +206,7 @@ def cv_plot_results(configs : dict):
 
 
 def create_folds(img_list : list, num_folds : int) -> tuple[list, list]:
-    """
-    Given images and the number of folds, create training/validation sets with the most even distribution possible
-
-    Parameters
-    ----------
-    img_list : list
-        List of filenames that will be used for cross-validation
-    num_folds : int
-        Number of training/validation sets to generate
-    
-    Returns
-    -------
-    Training set for each fold : list
-    Validation set for each fold : list 
-    """
+    """Given images and the number of folds, create training/validation sets with the most even distribution possible"""
 
     # number of validation images to be held out in each fold
     num_val = np.zeros(num_folds)

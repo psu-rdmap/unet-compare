@@ -26,32 +26,39 @@ def load_UNet(configs : dict) -> keras.Model:
         model_name = 'UNet'
         x = input
         enc_outputs = []
+        # repeatedly adds a convolution layer and saves the current outputs
         for idx, filters in enumerate(enc_filters):
             name_idx = f'{idx}0'
             # conv
             x = ConvBlock(x, filters, batchnorm, l2_reg, name_idx)
             enc_outputs.append(x)
-            # pool
+            # pool except for the last block
             if idx < 4:
                 x = MaxPooling2D(pool_size=2, name = 'pool_'+name_idx)(x)
         
-
     elif configs['encoder_name'] == 'EfficientNetB7':
-        model_name = 'EfficientNet'
-        backbone = EfficientNetB7(include_top = False, weights = 'imagenet', input_tensor = input)
+        model_name = 'EfficientNetB7'
+        backbone = EfficientNetB7(include_top = False, weights = configs['weights'], input_tensor = input)
 
-        # freeze entire backbone or just batchnorm layers
-        if configs['freeze_backbone']:
+        # handles model freezing (batchnorm layers must always stay frozen)
+        # freeze backbone
+        if configs['backbone_finetuning'] == False:
             for layer in backbone.layers:
                 layer.trainable = False
         else:
+            # freeze specific blocks
+            if type(configs['backbone_finetuning']) == list:
+                block_strs = ['block' + str(block_idx) for block_idx in configs['backbone_finetuning']]
+                for layer in backbone.layers:
+                    if layer.name[:6] not in block_strs:
+                        layer.trainable = False
+            # freeze batchnorm layers
             for layer in backbone.layers:
                 if isinstance(layer, tf.keras.layers.BatchNormalization):
                     layer.trainable = False
 
         enc_stages = ['stem_activation', 'block2g_add', 'block3g_add', 'block5j_add', 'block7d_add']
         enc_outputs = [backbone.get_layer(stage).output for stage in enc_stages]
-
     
     # decoder
     enc_outputs.reverse()

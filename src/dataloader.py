@@ -82,21 +82,21 @@ def create_train_val_inference_dataset(configs: dict) -> dict:
     img_ext = next(iter({file.suffix for file in (data_dir / 'images').iterdir()}))
 
     # Step 1: convert filenames to full paths
-    train_img_paths = [str(data_dir / 'images' / (file + img_ext)) for file in configs['training_set']]
-    val_img_paths = [str(data_dir / 'images' / (file + img_ext)) for file in configs['validation_set']]
+    train_paths = [data_dir / 'images' / (file + img_ext) for file in configs['training_set']]
+    val_paths = [data_dir / 'images' / (file + img_ext) for file in configs['validation_set']]
 
     # Step 2: convert full paths list to tensor
-    train_dataset = tf.data.Dataset.from_tensor_slices(train_img_paths)
-    val_dataset = tf.data.Dataset.from_tensor_slices(val_img_paths)
+    train_dataset = tf.data.Dataset.from_tensor_slices([str(path) for path in train_paths])
+    val_dataset = tf.data.Dataset.from_tensor_slices([str(path) for path in val_paths])
 
     # Step 3: load images and batch them
     train_dataset = train_dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
     val_dataset = val_dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
 
-    train_dataset.batch(1)
-    val_dataset.batch(1)
+    train_dataset = train_dataset.batch(1)
+    val_dataset = val_dataset.batch(1)
 
-    return {'train_dataset' : train_dataset, 'train_paths' : train_img_paths, 'val_dataset' : val_dataset, 'val_paths' : val_img_paths}
+    return {'train_dataset' : train_dataset, 'train_paths' : train_paths, 'val_dataset' : val_dataset, 'val_paths' : val_paths}
 
 
 def create_inference_dataset(configs: dict) -> dict[tf.Tensor, list[Path]]:
@@ -108,7 +108,7 @@ def create_inference_dataset(configs: dict) -> dict[tf.Tensor, list[Path]]:
     # create tensorflow dataset
     dataset = tf.data.Dataset.from_tensor_slices([str(path) for path in data_paths])
     dataset = dataset.map(lambda x: parse_image(x, img_ext, None), num_parallel_calls=AUTOTUNE)
-    dataset.batch(1)
+    dataset = dataset.batch(1)
 
     return {'dataset' : dataset, 'data_paths' : data_paths}
 
