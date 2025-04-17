@@ -38,7 +38,7 @@ def load_UNet(configs : dict) -> keras.Model:
         
     elif configs['encoder_name'] == 'EfficientNetB7':
         model_name = 'EfficientNetB7'
-        backbone = EfficientNetB7(include_top = False, weights = configs['weights'], input_tensor = input)
+        backbone = EfficientNetB7(include_top = False, weights = configs['backbone_weights'], input_tensor = input)
 
         # handles model freezing (batchnorm layers must always stay frozen)
         # freeze backbone

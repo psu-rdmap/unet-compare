@@ -8,7 +8,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['PYCARET_CUSTOM_LOGGING_LEVEL'] = 'CRITICAL'
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-import argparse, json, shutil, gc, sys
+import argparse, json, shutil, gc
 import tensorflow as tf
 from keras.api.optimizers import Adam
 from keras.api.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
@@ -19,7 +19,7 @@ from pathlib import Path
 from natsort import os_sorted
 
 # show if a gpu is available
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), '\n')
+print("\nNumber of GPUs available: ", len(tf.config.list_physical_devices('GPU')), '\n')
 
 # get config file from input
 parser = argparse.ArgumentParser(description='U-Net Training')
@@ -174,7 +174,10 @@ class Operations:
             # save predictions
             utils.save_preds(preds, save_paths)
 
+
     def save_model_summary(self):
+        """Writes the model summary to a file after training"""
+        
         with open(self.configs['results_dir'] / 'model_summary.out', 'w') as f:
             self.model.summary(print_fn=lambda x: f.write(x + '\n'))
 
