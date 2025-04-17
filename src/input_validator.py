@@ -28,7 +28,7 @@ class Train(BaseModel):
     root_dir : Path
     operation_mode: str
     dataset_name: str
-    input_shape: Tuple[int, int] = None
+    input_shape: Tuple[int, int, int] = None
     encoder_name: Literal['UNet', 'EfficientNetB7'] = Field(
         default='UNet',
         description="Type of model architecture forming the encoder section of U-Net"
@@ -462,8 +462,8 @@ def validate(input_configs: dict) -> dict:
 
     # select validator specific to the operation mode
     if general.operation_mode == 'train':
-        output_configs = Train.model_validate(general.model_dump())
+        output_configs = Train.model_validate(input_configs)
     else:
-        output_configs = Inference.model_validate(general.model_dump())
+        output_configs = Inference.model_validate(input_configs)
 
     return output_configs.model_dump()

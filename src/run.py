@@ -59,10 +59,10 @@ class Operations:
         
         # start training
         self.model.fit(
-            self.dataset['train'],
+            self.dataset['train_dataset'],
             epochs = self.configs['num_epochs'],
             steps_per_epoch = self.dataset['train_steps'],
-            validation_data = self.dataset['val'],
+            validation_data = self.dataset['val_dataset'],
             validation_steps = self.dataset['val_steps'],
             callbacks=callbacks,
             verbose=2
@@ -153,7 +153,7 @@ def main():
         configs: dict = json.load(f)
 
     # validate and print configs
-    input_validator.validate(configs)
+    configs = input_validator.validate(configs)
     utils.print_save_configs(configs.copy())
 
     # start operations
