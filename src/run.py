@@ -16,6 +16,7 @@ from keras.api.saving import load_model
 from keras import backend as K
 import input_validator, dataloader, models, utils
 from pathlib import Path
+from natsort import os_sorted
 
 # show if a gpu is available
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')), '\n')
@@ -41,8 +42,8 @@ class Operations:
         # load dataset and model
         print(f"\nCreating dataset from `{self.configs['dataset_name']}`...\n")
         self.dataset = dataloader.create_train_dataset(self.configs)
-        print(f"Training images: {self.configs['training_set']}")
-        print(f"Validation images: {self.configs['validation_set']}\n")
+        print(f"Training images: {os_sorted(self.configs['training_set'])}")
+        print(f"Validation images: {os_sorted(self.configs['validation_set'])}\n")
         print(f"Loading and compiling `{self.configs['encoder_name']}-{self.configs['decoder_name']}`...\n")
         self.model = models.load_UNet(self.configs)
         self.model.compile(
