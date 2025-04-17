@@ -61,7 +61,6 @@ class Train(BaseModel):
     )
     backbone_finetuning: Optional[bool | List[NonNegativeInt]] = Field(
         default=None,
-        max_length=7,
         description="Controls the finetuning of a pretrained backbone. " \
         "This should be ignored when random weights are used like when `encoder_name` is `UNet` and when `backbone_weights` is `random`." \
         "If the entire backbone is to be unfrozen, this should be `True`. Otherwise, `False` indicates the model is frozen or selected blocks (array of ints)"
@@ -165,6 +164,7 @@ class Train(BaseModel):
 
         # block level unfreezing should be an array of block ints (0,1,2,...,7) 
         if self.encoder_name == 'EfficientNetB7' and type(self.backbone_finetuning) == list:
+            assert len(self.backbone_finetuning) < 8 and len(self.backbone_finetuning) > 1, "There must be at least 1 and at most 7 block indices in `backbone_finetuning`"
             assert len(set(self.backbone_finetuning)) == len(self.backbone_finetuning), "All block indices must be unique in `backbone_finetuning`"
             assert np.all(np.array(self.backbone_finetuning) < 8), "Block indices must be from 0 to 7 in `backbone_finetuning`"
 
