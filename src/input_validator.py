@@ -309,7 +309,7 @@ class Train(BaseModel):
                     # ------------ FORK 4: auto split is provided or not ------------ # 
                     if self.auto_split:
                         # make sure auto_split is not too large where no train set is created
-                        assert self.auto_split < (1 / len(self.training_set)), f"auto_split validation hold-out percentage must be less than {1/len(self.training_set)} for the `training_set` provided"
+                        assert self.auto_split < (1-(1/len(self.training_set))), f"auto_split validation hold-out percentage must be less than {1-(1/len(self.training_set))} for the `training_set` provided"
                     else:
                         # val set is the complement of train; make sure train does not have all available images
                         assert not training_set < img_stems_set, "`training_set` can not have all images in the dataset. Some must be left over for `validation_set`"
@@ -337,7 +337,7 @@ class Train(BaseModel):
                         self.auto_split = 0.4
                         warn("`auto_split` validation hold-out percentage not provided even though `training_set` and `validation_set` are `null` and `cross_validation` is `false`. Defaulting to 40%")
                     else:      
-                        assert self.auto_split < 1 / len(img_stems_set), f"`auto_split` validation hold-out percentage must be less {1/len(img_stems_set)}"
+                        assert self.auto_split < (1-1/len(img_stems_set)), f"`auto_split` validation hold-out percentage must be less {1-(1/len(img_stems_set))} for the `dataset_name` provided"
 
         return self
     
