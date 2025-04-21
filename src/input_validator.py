@@ -312,7 +312,7 @@ class Train(BaseModel):
                         assert self.auto_split < (1-(1/len(self.training_set))), f"auto_split validation hold-out percentage must be less than {1-(1/len(self.training_set))} for the `training_set` provided"
                     else:
                         # val set is the complement of train; make sure train does not have all available images
-                        assert not training_set < img_stems_set, "`training_set` can not have all images in the dataset. Some must be left over for `validation_set`"
+                        assert training_set < img_stems_set, "`training_set` can not have all images in the dataset. Some must be left over for `validation_set`"
                         # generate val set (sort them naturally)
                         self.validation_set = os_sorted(list(img_stems_set - training_set))
 
@@ -328,7 +328,7 @@ class Train(BaseModel):
                 if self.validation_set is not None:
                     # train set is the complement to val set
                     validation_set = set(self.validation_set)
-                    assert not validation_set < img_stems_set, "`validation_set` can not have all images in the dataset. Some must be left over for `training_set`"
+                    assert validation_set < img_stems_set, "`validation_set` can not have all images in the dataset. Some must be left over for `training_set`"
                     # generate train set (sort them naturally)
                     self.training_set = os_sorted(list(img_stems_set - validation_set))
                 else:
