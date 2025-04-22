@@ -1,113 +1,51 @@
 """
-This module handles all accessory operations such as plotting and inference
+Aiden Ochoa, 4/2025, RDMAP PSU Research Group
+This module handles all accessory operations such as plotting
 """
 
-import os
-import tensorflow as tf
 from keras.preprocessing.image import save_img
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import math
+import math, json
 from natsort import os_sorted
 from glob import glob
+from pathlib import Path
 
 
-def parse_inference_image(img_path : str) -> tf.Tensor:
-    """
-    Given the full path to an image (/path/to/image.ext), load it into a tensor
-
-    Parameters
-    ----------
-    img_path : str
-        Full path to image file
+def save_preds(preds : list[np.array], save_paths : list[Path]):
+    """Save inference predictions from model.predict()"""
     
-    Returns
-    -------
-    Loaded image : tf.Tensor
-    """
-
-    # read image and load it into 3 channels (pre-trained backbones require 3)
-    image = tf.io.read_file(img_path)
-    image = tf.image.decode_png(image, channels=3)
-
-    # convert tensor objects to floats and normalize images ([0,255] -> [0.0, 1.0]) and return tensor
-    return tf.cast(image, tf.float32) / 255.0
+    for i, pred in enumerate(preds):
+        save_img(str(save_paths[i]), pred)
 
 
-def save_preds(preds : tf.Tensor, save_fns : list):
-    """
-    Save each prediction from a tensor of predictions
-
-    Parameters
-    ----------
-    preds : tf.Tensor
-        Tensor of predictions with shape (N, H, W, 1) where N is the number of predictions
-    save_fns : list
-        List of corresponding image filenames
-    """
+def print_save_configs(configs : dict):
+    """Creates the results directory, prints the input configs after validation, and saves a copy to results"""
     
-    for idx, pred in enumerate(preds):
-        save_img(save_fns[idx], pred)
-
-
-def inference_ds(configs : dict, model : tf.keras.Model):
-    """
-    Inferences and saves every training/validation image after training
+    # create top-level results directory
+    configs['results_dir'].mkdir()
     
-    Parameters
-    ----------
-    configs : dict
-        Input configs given by the user
-    model : tf.keras.Model
-        Trained neural network
-    """
+    # print input to user for confirmation
+    print('-'*60 + ' User Input ' + '-'*60)
+    for key, val in configs.items():
+        print(key + ':', val)
+    print('-'*132)
 
-    data_path = os.path.join(configs['root'], 'data/', configs['dataset_prefix'], 'images/')
-
-    # define training and validation dataset
-    train_ds = tf.data.Dataset.from_tensor_slices([data_path + img + configs['image_ext'] for img in configs['train']])
-    val_ds = tf.data.Dataset.from_tensor_slices([data_path + img + configs['image_ext'] for img in configs['val']])
-
-    # replace every image path in the training and validation directories with a loaded image and annotation pair
-    train_ds = train_ds.map(parse_inference_image)
-    val_ds = val_ds.map(parse_inference_image)
-
-    # batch data
-    train_ds = train_ds.batch(1)
-    val_ds = val_ds.batch(1)
-
-    # get predictions
-    train_preds = model.predict(train_ds, verbose=1)
-    val_preds = model.predict(val_ds, verbose=1)
-
-    # define output directories
-    train_save_dir = os.path.join(configs['results'], 'train_preds')
-    os.mkdir(train_save_dir)
-    train_save_fns = [os.path.join(train_save_dir, fn + '.png') for fn in configs['train']]
-
-    val_save_dir = os.path.join(configs['results'], 'val_preds')
-    os.mkdir(val_save_dir)
-    val_save_fns = [os.path.join(val_save_dir, fn + '.png') for fn in configs['val']]
-
-    # save train and val preds
-    save_preds(train_preds, train_save_fns)
-    save_preds(val_preds, val_save_fns)
+    # save configs into results dir for reference
+    with open(configs['results_dir'] / 'configs.json', 'w') as con:
+        # make Path objects strings for serialization
+        configs['root_dir'] = str(configs['root_dir'])
+        configs['results_dir'] = str(configs['results_dir'])
+        json.dump(configs, con)
 
 
 def plot_results(configs : dict):
-    """
-    Loads training metrics from a single training loop, plots them, and saves it into the results directory
-
-    Parameters
-    ----------
-    configs : dict
-        Input configs given by the user
-    """
+    """Loads training metrics from a single training loop, plots them, and saves it to the results directory"""
 
     # paths
-    metrics_path = os.path.join(configs['results'], 'metrics.csv')
-    plot_save_path = os.path.join(configs['results'], 'metrics.png')
+    metrics_path = configs['results_dir'] / 'metrics.csv'
+    plot_save_path = configs['results_dir'] / 'metrics.png'
 
     # read metrics into dataframe
     metrics = pd.read_csv(metrics_path)
@@ -152,24 +90,11 @@ def plot_results(configs : dict):
         axs[i].grid(visible=True)
         axs[i].legend()     
 
-    fig.savefig(plot_save_path, bbox_inches="tight")
+    fig.savefig(str(plot_save_path), bbox_inches="tight")
 
 
 def add_f1(metrics : pd.DataFrame, val = False) -> pd.DataFrame:
-    """
-    Calculates the f1-score element-wise given columns of the dataframe
-    
-    Parameters
-    ----------
-    metrics : pd.DataFrame
-        Metrics from the csv file made while training
-    val : bool
-        Whether the metrics correspond to the validation (true) or training (false) set 
-    
-    Returns
-    -------
-    New metrics DataFrame column with f1 values : pd.DataFrame
-    """
+    """Calculates the f1-score element-wise given columns of a Pandas metrics dataframe"""
 
     if val == True:
         p = 'val_Precision'
@@ -183,28 +108,21 @@ def add_f1(metrics : pd.DataFrame, val = False) -> pd.DataFrame:
 
 
 def cv_plot_results(configs : dict):
-    """
-    Loads in metrics for every fold, plots loss curves together, and plots statistics for each epoch
-
-    Parameters
-    ----------
-    configs : dict
-        Input configs given by the user
-    """
+    """Loads in metrics from every cross validation fold, plots loss curves together, and plots statistics for each epoch"""
 
     # paths
-    loss_save_path = os.path.join(configs['results'], 'loss.png')
-    metrics_save_path = os.path.join(configs['results'], 'metrics.png')
+    loss_save_path = configs['results_dir'] / 'loss.png'
+    metrics_save_path = configs['results_dir'] / 'metrics.png'
 
     # get fold directory names and sort them using natural sorting
-    fold_dirs = glob(os.path.join(configs['results'], 'fold_*/'))
+    fold_dirs = glob(str(configs['results_dir'] / 'fold_*'))
     fold_dirs = os_sorted(fold_dirs)
 
     # dict to hold dataframes for each fold
     all_metrics = []
     for fold in range(len(fold_dirs)):
         # get metrics from csv
-        fold_metrics = pd.read_csv(os.path.join(fold_dirs[fold], 'metrics.csv'))
+        fold_metrics = pd.read_csv(str(Path(fold_dirs[fold]) / 'metrics.csv'))
 
         # add f1 columns to the dataframe
         fold_metrics['f1'] = add_f1(fold_metrics)
@@ -242,7 +160,7 @@ def cv_plot_results(configs : dict):
         ax.grid(visible=True)
         ax.legend()
 
-    fig.savefig(loss_save_path, bbox_inches="tight")
+    fig.savefig(str(loss_save_path), bbox_inches="tight")
 
     # get mean and stdev across all folds
     num_metrics = np.shape(all_metrics)[-1]
@@ -284,25 +202,11 @@ def cv_plot_results(configs : dict):
         axs[i].grid(visible=True)
         axs[i].legend()
 
-    fig.savefig(metrics_save_path, bbox_inches="tight")
+    fig.savefig(str(metrics_save_path), bbox_inches="tight")
 
 
 def create_folds(img_list : list, num_folds : int) -> tuple[list, list]:
-    """
-    Given images and the number of folds, create training/validation sets with the most even distribution possible
-
-    Parameters
-    ----------
-    img_list : list
-        List of filenames that will be used for cross-validation
-    num_folds : int
-        Number of training/validation sets to generate
-    
-    Returns
-    -------
-    Training set for each fold : list
-    Validation set for each fold : list 
-    """
+    """Given images and the number of folds, create training/validation sets with the most even distribution possible"""
 
     # number of validation images to be held out in each fold
     num_val = np.zeros(num_folds)

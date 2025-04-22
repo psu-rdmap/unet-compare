@@ -1,4 +1,5 @@
 """
+Aiden Ochoa, 4/2025, RDMAP PSU Research Group
 This module handles the definition of encoder/decoder subnetworks and their connection
 """
 
@@ -10,24 +11,13 @@ from blocks import ConvBlock, UpsampleBlock
 from tensorflow.keras.applications import EfficientNetB7
 
 
-def UNet(configs : dict):
-    """
-    U-Net built with Functional API using either U-Net or EfficientNetB7 encoders and either U-Net or U-Net++ decoders
-
-    Parameters
-    ----------
-    configs : dict
-        Input configs defined in the JSON input file
-
-    Returns
-    -------
-    Keras Functional model representing the UNet : tf.keras.Model 
-    """
+def load_UNet(configs : dict) -> keras.Model:
+    """U-Net built with Functional API using either U-Net or EfficientNetB7 encoders and either U-Net or U-Net++ decoders"""
 
     enc_filters = configs['encoder_filters']
     dec_filters = configs['decoder_filters']
     batchnorm = configs['batchnorm']
-    l2_reg = configs['l2_reg']
+    l2_reg = configs['L2_regularization_strength']
 
     input = keras.Input(shape = configs['input_shape'], name = 'main_input')
 
@@ -36,32 +26,43 @@ def UNet(configs : dict):
         model_name = 'UNet'
         x = input
         enc_outputs = []
+        # repeatedly adds a convolution layer and saves the current outputs
         for idx, filters in enumerate(enc_filters):
             name_idx = f'{idx}0'
             # conv
             x = ConvBlock(x, filters, batchnorm, l2_reg, name_idx)
             enc_outputs.append(x)
-            # pool
+            # pool except for the last block
             if idx < 4:
                 x = MaxPooling2D(pool_size=2, name = 'pool_'+name_idx)(x)
         
-
     elif configs['encoder_name'] == 'EfficientNetB7':
-        model_name = 'EfficientNet'
-        backbone = EfficientNetB7(include_top = False, weights = 'imagenet', input_tensor = input)
+        model_name = 'EfficientNetB7'
+        if configs['backbone_weights'] == 'random':
+            weights = None
+        else:
+            weights = 'imagenet'
+        backbone = EfficientNetB7(include_top = False, weights = weights, input_tensor = input)
 
-        # freeze entire backbone or just batchnorm layers
-        if configs['freeze_backbone']:
+        # handles model freezing (batchnorm layers must always stay frozen)
+        # freeze backbone
+        if configs['backbone_finetuning'] == False:
             for layer in backbone.layers:
                 layer.trainable = False
         else:
+            # freeze specific blocks (or leave the whole model unfrozen if not a list)
+            if type(configs['backbone_finetuning']) == list:
+                block_strs = ['block' + str(block_idx) for block_idx in configs['backbone_finetuning']]
+                for layer in backbone.layers:
+                    if layer.name[:6] not in block_strs:
+                        layer.trainable = False
+            # freeze batchnorm layers
             for layer in backbone.layers:
                 if isinstance(layer, tf.keras.layers.BatchNormalization):
                     layer.trainable = False
 
         enc_stages = ['stem_activation', 'block2g_add', 'block3g_add', 'block5j_add', 'block7d_add']
         enc_outputs = [backbone.get_layer(stage).output for stage in enc_stages]
-
     
     # decoder
     enc_outputs.reverse()
