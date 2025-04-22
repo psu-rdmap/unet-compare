@@ -3,7 +3,7 @@ Aiden Ochoa, 4/2025, RDMAP PSU Research Group
 This module validates the user input configs file and modifies it as necessary
 """
 
-from pydantic import BaseModel, PositiveInt, NonNegativeInt, PositiveFloat, NonNegativeFloat, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, PositiveInt, PositiveFloat, NonNegativeFloat, ConfigDict, Field, field_validator, model_validator
 from typing import Literal, List, Optional, Tuple
 from pathlib import Path
 from warnings import warn
@@ -27,6 +27,10 @@ class General(BaseModel):
         min_length=2,
         description="Dataset subdirectory prefix corresponding to unet-compare/data/<dataset_name>/"
     )
+    results_dir: Optional[str] = Field(
+        default=None,
+        description="Path for results directory relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
+    )    
     model_config = ConfigDict(
         extra='allow',
     )
@@ -36,6 +40,7 @@ class Train(BaseModel):
     root_dir : Path
     operation_mode: str
     dataset_name: str
+    results_dir: Optional[str | Path]
     input_shape: Tuple[int, int, int] = None
     encoder_name: Literal['UNet', 'EfficientNetB7'] = Field(
         default='UNet',
@@ -59,7 +64,7 @@ class Train(BaseModel):
         default=None,
         description="Weights to be loaded when using a pretrained backbone. This should be ignored when `encoder_name` is `UNet`"
     )
-    backbone_finetuning: Optional[bool | List[NonNegativeInt]] = Field(
+    backbone_finetuning: Optional[bool | List[PositiveInt]] = Field(
         default=None,
         description="Controls the finetuning of a pretrained backbone. " \
         "This should be ignored when random weights are used like when `encoder_name` is `UNet` and when `backbone_weights` is `random`." \
@@ -86,14 +91,6 @@ class Train(BaseModel):
     augment: bool = Field(
         default=True,
         description="Augment the training subset eightfold by flipping and rotating by 90 deg intervals"
-    )
-    save_model: bool = Field(
-        default=True,
-        description="Save the model to the results file"
-    )
-    standardize: bool = Field(
-        default=False,
-        description="Standardize the dataset using image statistics from the train subset"
     )
     cross_validation: bool = Field(
         default=False,
@@ -129,10 +126,6 @@ class Train(BaseModel):
     model_summary: bool = Field(
         default=True,
         description="Print out the model summary from Keras to a log file in the results directory"
-    )
-    results_dir: Optional[str | Path] = Field(
-        default=None,
-        description="Path for results directory relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
     )
     batchnorm: bool = Field(
         default=False,
@@ -385,12 +378,9 @@ class Inference(BaseModel):
     root_dir: Path
     operation_mode: str
     dataset_name: str
+    results_dir: Optional[str | Path]
     model_path: str = Field(
         description="Path relative to /path/to/unet-compare/ to an existing model to be used for inference"
-    )
-    results_dir: Optional[str | Path] = Field(
-        default=None,
-        description="Path for results directory relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
     )
     
     @field_validator('dataset_name', mode='after')
