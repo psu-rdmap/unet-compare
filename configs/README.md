@@ -116,12 +116,12 @@ The following configs apply when `operation_mode` is `train` in the input file.
     - **Default**: `null` (required if `early_stopping` is `true`)
 
 - `training_set`
-    - **Definition**: filenames of image-annotation pairs to be used for training. This has complex logic associated with it and can be generated algorithmically if ignored or `null`. Look at this [flowchart]() to see how it may be specified
+    - **Definition**: filenames of image-annotation pairs to be used for training. This has complex logic associated with it and can be generated algorithmically if ignored or `null`. Look at this [flowchart](https://github.com/psu-rdmap/unet-compare/blob/input_validator/flowchart.png) to see how it may be specified
     - **Expected values**: `null`, `["fn_1", "fn_2", ...]`
     - **Default**: `null`
 
 - `validation_set`
-    - **Definition**: filenames of image-annotation pairs to be used for validation. This has complex logic associated with it and can be generated algorithmically if ignored or `null`. Look at this [flowchart]() to see how it may be specified. This should be ignored (or `null`) if `cross_validation` is `true`
+    - **Definition**: filenames of image-annotation pairs to be used for validation. This has complex logic associated with it and can be generated algorithmically if ignored or `null`. Look at this [flowchart](https://github.com/psu-rdmap/unet-compare/blob/input_validator/flowchart.png) to see how it may be specified. This should be ignored (or `null`) if `cross_validation` is `true`
     - **Expected values**: `null`, `["fn_1", "fn_2", ...]`
     - **Default**: `null`
 
@@ -147,7 +147,7 @@ The following configs apply when `operation_mode` is `inference` in the input fi
 
 
 # Example Configs Files
-Below is an example input file used to train the baseline U-Net model. It only includes parameters that differ from their default values. Following the logic in this [flowchart](), `training_set` will use all remaining image-annotation pairs in the dataset `data/gb_512/`. 
+Below is an example input file used to train the baseline U-Net model. It only includes parameters that differ from their default values. Following the logic in this [flowchart](https://github.com/psu-rdmap/unet-compare/blob/input_validator/flowchart.png), `training_set` will use all remaining image-annotation pairs in the dataset `data/gb_512/`. 
 
 ```JSON
 {

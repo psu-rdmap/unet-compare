@@ -1,0 +1,8 @@
+{
+    "L2_regularization_strength" : 1e-4,
+    "num_epochs" : 200,
+    "patience" : 25,
+    "dataset_name" : "gb_512",
+    "batch_size" : 2,
+    "auto_split" : 0.3
+}

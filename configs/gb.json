@@ -1,5 +1,0 @@
-{
-	"operation_mode" : "train",
-	"dataset_name" : "gb_1024",
-	"batch_size" : 2
-}
