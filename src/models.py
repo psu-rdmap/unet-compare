@@ -56,6 +56,10 @@ def load_UNet(configs : dict) -> keras.Model:
                 for layer in backbone.layers:
                     if layer.name[:6] not in block_strs:
                         layer.trainable = False
+                # unfreeze stem if block 1 is unfrozen
+                if 'block1' in block_strs:
+                    for layer in backbone.layers[:8]:
+                        layer.trainable = True
             # freeze batchnorm layers
             for layer in backbone.layers:
                 if isinstance(layer, tf.keras.layers.BatchNormalization):
