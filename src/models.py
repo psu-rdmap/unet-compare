@@ -44,26 +44,30 @@ def load_UNet(configs : dict) -> keras.Model:
             weights = 'imagenet'
         backbone = EfficientNetB7(include_top = False, weights = weights, input_tensor = input)
 
-        # handles model freezing (batchnorm layers must always stay frozen)
-        # freeze backbone
-        if configs['backbone_finetuning'] == False:
+        # handles model freezing (batchnorm layers must always stay frozen if pretrained)
+        # unfreeze entire backbone if using random weights
+        if weights == None:
             for layer in backbone.layers:
-                layer.trainable = False
+                layer.trainable = True
         else:
-            # freeze specific blocks (or leave the whole model unfrozen if not a list)
-            if type(configs['backbone_finetuning']) == list:
-                block_strs = ['block' + str(block_idx) for block_idx in configs['backbone_finetuning']]
+            if configs['backbone_finetuning'] == False:
                 for layer in backbone.layers:
-                    if layer.name[:6] not in block_strs:
-                        layer.trainable = False
-                # unfreeze stem if block 1 is unfrozen
-                if 'block1' in block_strs:
-                    for layer in backbone.layers[:8]:
-                        layer.trainable = True
-            # freeze batchnorm layers
-            for layer in backbone.layers:
-                if isinstance(layer, tf.keras.layers.BatchNormalization):
                     layer.trainable = False
+            else:
+                # freeze specific blocks (or leave the whole model unfrozen if not a list)
+                if type(configs['backbone_finetuning']) == list:
+                    block_strs = ['block' + str(block_idx) for block_idx in configs['backbone_finetuning']]
+                    for layer in backbone.layers:
+                        if layer.name[:6] not in block_strs:
+                            layer.trainable = False
+                    # unfreeze stem if block 1 is unfrozen
+                    if 'block1' in block_strs:
+                        for layer in backbone.layers[:8]:
+                            layer.trainable = True
+                # freeze batchnorm layers
+                for layer in backbone.layers:
+                    if isinstance(layer, tf.keras.layers.BatchNormalization):
+                        layer.trainable = False
 
         enc_stages = ['stem_activation', 'block2g_add', 'block3g_add', 'block5j_add', 'block7d_add']
         enc_outputs = [backbone.get_layer(stage).output for stage in enc_stages]
