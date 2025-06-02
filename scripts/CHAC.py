@@ -16,12 +16,12 @@ ROOT = Path.cwd()
 
 parser = argparse.ArgumentParser(description='CHAC Algorithm')
 parser.add_argument(
-    'src_dir', 
+    '--src_dir', 
     type=str, 
     help="Path to directory with source images relative to /path/to/unet-compare/"
 )
 parser.add_argument(
-    'save_dir', 
+    '--save_dir', 
     type=str, 
     help="Path to directory for saved grain images relative to /path/to/unet-compare/"
 )
@@ -40,7 +40,7 @@ def CHAC_single_image(path: Path, save_dir: Path, background_dir: Path):
     image = cv.imread(path.as_posix(), cv.IMREAD_COLOR)
     if image is None:
         warn(f"Image at {str(path)} could not be loaded by OpenCV. Skipping this file")
-        return
+        return None
 
     # check dest_dir
     if not save_dir.exists():
@@ -90,6 +90,11 @@ def CHAC_single_image(path: Path, save_dir: Path, background_dir: Path):
         ret = cv.isContourConvex(approximatedShape)
         # convex detect
         if ret  == True:
+            area = cv.contourArea(contours[c])
+            if area < 50:
+                continue
+            else:
+                areas.append(area)
             points = cv.convexHull(approximatedShape)
             total = len(points)
             for i in range(len(points)):
@@ -98,19 +103,18 @@ def CHAC_single_image(path: Path, save_dir: Path, background_dir: Path):
                 cv.line(background, (x1, y1), (x2, y2), (200, 0, 200), 3, 8, 0)
             convex_contours += 1
             total_contours += 1
-            areas.append(cv.contourArea(contours[c]))
             
         else:
             total_contours += 1
 
     # calculate diameter histogram
-    scale = 100 / 110 # nm/px
+    scale = 1 # nm/px
     diameters = 2*np.sqrt(np.array(areas))/np.pi*scale
 
     # save image
     cv.imwrite((save_dir / path.name).as_posix(), background)
 
-    return diameters
+    return diameters, convex_contours
 
 
 def main():
@@ -125,12 +129,15 @@ def main():
     else:
         background_dir = None
     
+    grain_count = 0
     diameters = np.array([])
     for path in src_dir.iterdir():
         if path.is_file():
-            d = CHAC_single_image(path, save_dir, background_dir)
-            diameters = np.concatenate([diameters, d])
-
+            d, c = CHAC_single_image(path, save_dir, background_dir)
+            grain_count += c
+            if d is not None:
+                diameters = np.concatenate([diameters, d])
+    
     # compute grain size distribution
     hist, bin_edges = np.histogram(diameters, bins=7, density=False)
     
@@ -140,7 +147,8 @@ def main():
     plt.title('Grain Size Distribution')
 
     plt.savefig((save_dir / 'grain_size_distribution.png').as_posix(), bbox_inches='tight')
-
+    
+    print("Number of convex grains:", grain_count)
     print("Grain diameter mean:", round(np.average(diameters), 3), 'nm')
     print("Grain diamter standard deviation:", round(np.std(diameters), 3), 'nm')
 
