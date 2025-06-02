@@ -10,30 +10,32 @@ import argparse, glob
 ROOT = Path.cwd()
 
 parser = argparse.ArgumentParser(description='CM2 Algorithm')
+
 parser.add_argument(
-    'image_dir', 
-    type=str, 
-    help="Path to directory with images relative to /path/to/unet-compare/"
+    '--image_dir', 
+    type=str,
+    default=None, 
+    help="Path to directory with images relative to /path/to/unet-compare/ to optionally use as background"
 )
 parser.add_argument(
-    'annotation_dir', 
+    '--annotation_dir', 
     type=str, 
     help="Path to directory with annotations relative to /path/to/unet-compare/"
 )
 parser.add_argument(
-    'prediction_dir', 
+    '--prediction_dir', 
     type=str, 
     help="Path to directory with predictions relative to /path/to/unet-compare/"
 )
 parser.add_argument(
-    'save_dir', 
+    '--save_dir', 
     type=str, 
     help="Path to directory to save color mappings relative to /path/to/unet-compare/"
 )
 args = parser.parse_args()
 
 
-def load_img(img_path: Path):
+def load_img(img_path: Path) -> np.ndarray:
     """Load an image from the path as a grayscale numpy array"""
     img = cv.imread(img_path.as_posix(), cv.IMREAD_GRAYSCALE)
     if img is None:
@@ -42,25 +44,28 @@ def load_img(img_path: Path):
         return img
     
 
-def binarize_img(img: np.ndarray): 
+def binarize_img(img: np.ndarray) -> np.ndarray: 
     """Threshold the input image using Otsu's method and return an array of 0s and 1s"""
     _, img_threshd = cv.threshold(img.copy(), 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
     return (img_threshd/255).astype(int)
 
 
-def get_mask(ann_bin: np.ndarray, pred_bin: np.ndarray, compare_condition: tuple[int, int]):
+def get_mask(ann_bin: np.ndarray, pred_bin: np.ndarray, compare_condition: tuple[int, int]) -> np.ndarray:
     """Given the compare condition (ints are 0 or 1), compare the annotation and prediction"""
     mask = np.logical_and(ann_bin==compare_condition[0], pred_bin==compare_condition[1])
     return mask.astype('uint8')
 
 
-def CM2_single_image(img_path: Path, ann_path: Path, pred_path: Path, save_dir: Path):
+def CM2_single_image(img_path: Path | None, ann_path: Path, pred_path: Path, save_dir: Path):
     """Apply the CM2 algorithm to a single image, annotation, prediction pair and overlay onto the image background is None"""
     
-    # load images
-    img = load_img(img_path)
+    # load image
     ann = load_img(ann_path)
     pred = load_img(pred_path)
+    if img_path is not None:
+        img = load_img(img_path)
+    else:
+        img = np.zeros(pred.shape)
 
     # check shapes
     assert pred.shape == img.shape, f"Image {str(img_path)} has shape {img.shape} and prediction {str(pred_path)} has shape {pred.shape}. \
@@ -79,7 +84,7 @@ def CM2_single_image(img_path: Path, ann_path: Path, pred_path: Path, save_dir: 
     fn_mask = get_mask(ann_bin, pred_bin, compare_condition=(1,0))
 
     # define background base channel
-    base_channel = base_channel = np.multiply(tn_mask, img)
+    base_channel = np.multiply(tn_mask, img)
     
     # define color channels as base channel overlayed with masks
     b_channel = np.add(base_channel, fp_mask*255).astype('uint8')
@@ -96,7 +101,11 @@ def CM2_single_image(img_path: Path, ann_path: Path, pred_path: Path, save_dir: 
 
 def main():
     # create Path objects from input directories
-    img_dir = ROOT / args.image_dir
+    if args.image_dir is not None:
+        img_dir = ROOT / args.image_dir
+    else:
+        img_dir = None
+    
     ann_dir = ROOT / args.annotation_dir
     pred_dir = ROOT / args.prediction_dir
     save_dir = ROOT / args.save_dir
@@ -109,10 +118,13 @@ def main():
     for pred_path in pred_dir.iterdir():
         if pred_path.is_file():
             # determine corresponding image and annotation paths
-            img_path = img_dir / pred_path.stem
-            img_path = Path(glob.glob(img_path.as_posix() + '*')[0])
-            assert img_path.exists(), f"Image file {img_path} does not exist"
-            
+            if img_dir is not None:
+                img_path = img_dir / pred_path.stem
+                img_path = Path(glob.glob(img_path.as_posix() + '*')[0])
+                assert img_path.exists(), f"Image file {img_path} does not exist"
+            else:
+                img_path = None
+
             ann_path = ann_dir / pred_path.stem
             ann_path = Path(glob.glob(ann_path.as_posix() + '*')[0])
             assert ann_path.exists(), f"Annotation file {ann_path} does not exist"
