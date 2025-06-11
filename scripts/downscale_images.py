@@ -6,11 +6,11 @@ import argparse
 parser = argparse.ArgumentParser(description='Image rescaling')
 parser.add_argument('--src_dir', type=str, help="Path to directory with source images")
 parser.add_argument('--dest_dir', type=str, help="Path to directory for resized images")
-parser.add_argument('--output_shape', type=tuple[int, int], help="Size of resized images, not including channels (default is 1024x1024)")
+parser.add_argument('--output_shape', type=list[int, int], help="Size of resized images, not including channels (default is 1024x1024)")
 args = parser.parse_args()
 
 
-def resize_image(src_dir, dest_dir, out_shape=(1024, 1024)):
+def resize_image(src_dir, dest_dir, out_shape=[1024, 1024]):
     """Resize all images in a source directory to a given shape using 4x4 Lanczos interpolation"""
 
     # get list image paths
@@ -21,10 +21,10 @@ def resize_image(src_dir, dest_dir, out_shape=(1024, 1024)):
 
     # create the destination directory
     dest_dir = Path(dest_dir)
-    try:
-        dest_dir.mkdir()
-    except:
+    if dest_dir.exists():
         raise KeyError(f'{str(dest_dir)} already exists!')
+    else:
+        dest_dir.mkdir(exist_ok=True, parents=True)  
     
     # resize images
     for path in img_paths:
@@ -35,6 +35,8 @@ def resize_image(src_dir, dest_dir, out_shape=(1024, 1024)):
 
 
 def main():
+    assert args.src_dir != args.dest_dir, 'Source and destination directories must have different names!'
+
     if args.output_shape is None:
         resize_image(args.src_dir, args.dest_dir)
     else:
