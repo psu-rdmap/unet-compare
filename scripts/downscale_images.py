@@ -2,13 +2,15 @@ import cv2 as cv
 from pathlib import Path
 import argparse
 
+def list_of_ints(arg) -> list[int, int]:
+    return list(map(int, arg.split(',')))
+
 # get directory paths from user
 parser = argparse.ArgumentParser(description='Image rescaling')
 parser.add_argument('--src_dir', type=str, help="Path to directory with source images")
 parser.add_argument('--dest_dir', type=str, help="Path to directory for resized images")
-parser.add_argument('--output_shape', type=list[int, int], help="Size of resized images, not including channels (default is 1024x1024)")
+parser.add_argument('--output_shape', type=list_of_ints, help="Size of resized images, not including channels (default is 1024,1024)")
 args = parser.parse_args()
-
 
 def resize_image(src_dir, dest_dir, out_shape=[1024, 1024]):
     """Resize all images in a source directory to a given shape using 4x4 Lanczos interpolation"""
