@@ -18,8 +18,10 @@ import input_validator, dataloader, models, utils
 from pathlib import Path
 from natsort import os_sorted
 
-# show if a gpu is available
+# confirm GPU availibility and turn off memory growth
+physical_devices = tf.config.list_physical_devices('GPU')
 print("\nNumber of GPUs available: ", len(tf.config.list_physical_devices('GPU')), '\n')
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 # get config file from input
 parser = argparse.ArgumentParser(description='U-Net Training')
@@ -94,6 +96,7 @@ class Operations:
         print("Cleaning up...\n")
         # remove training dataset and clear memory
         shutil.rmtree(self.configs['root_dir'] / 'dataset')
+        del self.model
         K.clear_session()
         gc.collect()
 
