@@ -213,7 +213,7 @@ def create_folds(img_list : list, num_folds : int) -> tuple[list, list]:
 
     # randomly shuffle the image list given a numpy seed to prevent sequence bias
     np.random.seed(203)
-    img_list = np.random.permutation(img_list)
+    img_list = np.random.permutation(img_list).tolist()
 
     # determine number of hold out images in each fold
     for i in range(num_folds):
