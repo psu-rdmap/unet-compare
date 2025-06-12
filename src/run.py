@@ -193,11 +193,11 @@ def main():
     # training or inference
     if configs['operation_mode'] == 'train':
         if configs['cross_validation']:
-            crossval_loop()
+            crossval_loop(configs)
         else:
-            single_loop()
+            single_loop(configs)
     else:
-        inference()
+        inference(configs, None, None)
     
     print("Done.")
 
