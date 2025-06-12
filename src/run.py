@@ -54,6 +54,10 @@ class Operations:
             metrics = ['accuracy', 'Precision', 'Recall']
         )
 
+        # save model summary if desired
+        if self.configs['model_summary']:
+            utils.save_model_summary(self.configs, self.model)
+
         # define training callbacks
         callbacks = [
             CSVLogger(
@@ -73,7 +77,7 @@ class Operations:
         
         # start training
         print("Training model...\n")
-        self.model.fit(
+        history = self.model.fit(
             self.dataset['train_dataset'],
             epochs = self.configs['num_epochs'],
             steps_per_epoch = self.dataset['train_steps'],
@@ -96,7 +100,7 @@ class Operations:
         print("Cleaning up...\n")
         # remove training dataset and clear memory
         shutil.rmtree(self.configs['root_dir'] / 'dataset')
-        del self.model
+        del self.model, self.dataset, history, callbacks
         K.clear_session()
         gc.collect()
 
@@ -158,6 +162,8 @@ class Operations:
             utils.save_preds(train_preds, train_save_paths)
             utils.save_preds(val_preds, val_save_paths)
 
+            del train_preds, val_preds, train_save_paths, val_save_paths
+
         else:
             # load model and dataset
             print("\nLoading data and model...\n")
@@ -176,19 +182,6 @@ class Operations:
 
             # save predictions
             utils.save_preds(preds, save_paths)
-
-
-    def save_model_summary(self):
-        """Writes the model summary to a file after training and writes a file about the trainable layers"""
-
-        with open(self.configs['results_dir'] / 'model_summary.out', 'w') as f:
-            self.model.summary(print_fn=lambda x: f.write(x + '\n'))
-
-        with open(self.configs['results_dir'] / 'trainable.out', 'w') as f:
-            f.write(f"{'Layer':<35} {'Trainable':<20}\n")
-            f.write("=" * 50 + "\n")
-            for layer in self.model.layers:
-                f.write(f"{layer.name:<35} {str(layer.trainable):<20}\n")
 
 
 def main():
@@ -213,9 +206,6 @@ def main():
             operations.crossval_loop()
         else:
             operations.single_loop()
-
-        if configs['model_summary']:
-            operations.save_model_summary()
     else:
         operations.inference()
     

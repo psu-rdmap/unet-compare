@@ -7,7 +7,7 @@ from keras.preprocessing.image import save_img
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import math, json
+import math, json, keras
 from natsort import os_sorted
 from glob import glob
 from pathlib import Path
@@ -243,3 +243,16 @@ def create_folds(img_list : list, num_folds : int) -> tuple[list, list]:
         train_sets[i] = np.delete(img_list, np.arange(low, up)).tolist()
 
     return train_sets, val_sets
+
+
+def save_model_summary(configs: dict, model: keras.Model):
+    """Writes the model summary to a file after training and writes a file about the trainable layers"""
+
+    with open(configs['results_dir'] / 'model_summary.out', 'w') as f:
+        model.summary(print_fn=lambda x: f.write(x + '\n'))
+
+    with open(configs['results_dir'] / 'trainable.out', 'w') as f:
+        f.write(f"{'Layer':<35} {'Trainable':<20}\n")
+        f.write("=" * 50 + "\n")
+        for layer in model.layers:
+            f.write(f"{layer.name:<35} {str(layer.trainable):<20}\n")
