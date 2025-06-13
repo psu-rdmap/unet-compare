@@ -3,25 +3,15 @@ Aiden Ochoa, 4/2025, RDMAP PSU Research Group
 This module handles all training and inference operations. It has __main__
 """
 
-import os
-# suppress warnings when tensorflow is imported
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['PYCARET_CUSTOM_LOGGING_LEVEL'] = 'CRITICAL'
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-import argparse, json, shutil, gc, keras
-import tensorflow as tf
+import argparse, json, shutil, multiprocessing, gc, os, silence_tensorflow, keras
+import input_validator, dataloader, models, utils
+from keras.api.saving import load_model
 from keras.api.optimizers import Adam
 from keras.api.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
-from keras.api.saving import load_model
 from keras import backend as K
-import input_validator, dataloader, models, utils
 from pathlib import Path
 from natsort import os_sorted
-
-# confirm GPU availibility and turn off memory growth
-physical_devices = tf.config.list_physical_devices('GPU')
-print("\nNumber of GPUs available: ", len(tf.config.list_physical_devices('GPU')), '\n')
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 # get config file from input
 parser = argparse.ArgumentParser(description='U-Net Training')
@@ -31,6 +21,9 @@ args = parser.parse_args()
 
 def single_loop(configs: dict):
     """Trains a single model using a training and validation set"""
+
+    # load tensorflow to initialize Cuda for subprocess (cross-val specifically)
+    import tensorflow as tf
 
     # load dataset
     print(f"\nCreating dataset from `{configs['dataset_name']}`...\n")
@@ -122,8 +115,10 @@ def crossval_loop(configs: dict):
         configs.update({'results_dir' : results_dir})
         results_dir.mkdir()
 
-        # train fold
-        single_loop(configs)
+        # train fold as subprocess to prevent OOM
+        p = multiprocessing.Process(target=single_loop, args=(configs,))
+        p.start()
+        p.join()
 
         # reset results directory for next fold
         configs.update({'results_dir' : top_level_results})

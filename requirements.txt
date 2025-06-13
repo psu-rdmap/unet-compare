@@ -5,3 +5,4 @@ pandas==2.2.2
 natsort==8.4.0
 keras==3.8.0
 pydantic==2.11.3
+silence-tensorflow==1.2.3
