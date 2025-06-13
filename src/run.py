@@ -12,6 +12,7 @@ from keras import backend as K
 from pathlib import Path
 from natsort import os_sorted
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+silence_tensorflow.silence_tensorflow()
 
 # get config file from input
 parser = argparse.ArgumentParser(description='U-Net Training')
