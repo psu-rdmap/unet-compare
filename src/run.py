@@ -3,7 +3,7 @@ Aiden Ochoa, 4/2025, RDMAP PSU Research Group
 This module handles all training and inference operations. It has __main__
 """
 
-import argparse, json, shutil, multiprocessing, gc, os, silence_tensorflow, keras
+import argparse, json, shutil, multiprocessing, gc, os, keras
 import input_validator, dataloader, models, utils
 from keras.api.saving import load_model
 from keras.api.optimizers import Adam
@@ -12,7 +12,7 @@ from keras import backend as K
 from pathlib import Path
 from natsort import os_sorted
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-silence_tensorflow.silence_tensorflow()
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # get config file from input
 parser = argparse.ArgumentParser(description='U-Net Training')
