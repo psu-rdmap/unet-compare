@@ -34,8 +34,8 @@ def single_loop(configs: dict):
 
     # define F1-Score for operating on images (need to flatten y_pred and y_true)
     class F1ScoreSeg(tf.keras.metrics.F1Score):
-        def __init__(self, threshold=0.5, name='F1Score', **kwargs):
-            super().__init__(threshold=threshold, name=name, **kwargs)
+        def __init__(self, threshold=0.5, name='F1Score', average='micro', **kwargs):
+            super().__init__(threshold=threshold, name=name, average=average, **kwargs)
 
         def update_state(self, y_true, y_pred, sample_weight=None):
             # flatten before calling update_state method
