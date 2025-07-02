@@ -56,7 +56,7 @@ def plot_results(configs : dict):
 
     # determine best epoch corresponding to the final saved model  
     if configs['monitor_f1']:
-        best_idx = np.where(np.isclose(metrics['val_F1Score'], min(metrics['val_F1Score'])))[0]
+        best_idx = np.where(np.isclose(metrics['val_F1Score'], max(metrics['val_F1Score'])))[0]
     else:
         best_idx = np.where(np.isclose(metrics['val_loss'], min(metrics['val_loss'])))[0]
 
