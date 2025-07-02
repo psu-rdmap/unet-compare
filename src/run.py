@@ -41,7 +41,7 @@ def single_loop(configs: dict):
             # flatten before calling update_state method
             y_true = tf.reshape(y_true, [-1, 1])
             y_pred = tf.reshape(y_pred, [-1, 1])
-            super().update_state(self, y_pred, y_true, sample_weight=sample_weight)
+            super().update_state(y_pred, y_true, sample_weight=sample_weight)
 
     # load model
     print(f"Loading and compiling `{configs['encoder_name']}-{configs['decoder_name']}`...\n")
