@@ -54,18 +54,17 @@ def plot_results(configs : dict):
     num_epochs = metrics['epoch'].count()
     metrics['epoch'] = metrics['epoch'] + 1
 
-    # determine lowest val loss index (where val loss is closest to min(val_loss))
-    best_idx = np.where(np.isclose(metrics['val_loss'], min(metrics['val_loss'])))[0]
-
-    # add f1 columns to the dataframe
-    metrics['f1'] = add_f1(metrics)
-    metrics['val_f1'] = add_f1(metrics, val = True)
+    # determine best epoch corresponding to the final saved model  
+    if configs['monitor_f1']:
+        best_idx = np.where(np.isclose(metrics['val_F1Score'], min(metrics['val_F1Score'])))[0]
+    else:
+        best_idx = np.where(np.isclose(metrics['val_loss'], min(metrics['val_loss'])))[0]
 
     # generate subplots
     fig, axs = plt.subplots(4, 1, figsize=(12,20))
 
     titles = ['BCE Loss', 'Precision', 'Recall', 'F1-Score']
-    y_axes = ['loss', 'Precision', 'Recall', 'f1']
+    y_axes = ['loss', 'Precision', 'Recall', 'F1Score']
 
     for i in range(len(axs)):
         y1 = y_axes[i]
@@ -77,7 +76,11 @@ def plot_results(configs : dict):
         
         # add point corresponding to lowest val loss on each curve
         axs[i].plot(best_idx + 1, metrics[y1].iloc[best_idx], 'D', color='purple')
-        axs[i].plot(best_idx + 1, metrics[y2].iloc[best_idx], 'D', color='purple', label='Min Val Loss')
+        if configs['monitor_f1']:
+            best_model_label = 'Best Model (F1-Score)'
+        else:
+            best_model_label = 'Best Model (BCE Loss)'
+        axs[i].plot(best_idx + 1, metrics[y2].iloc[best_idx], 'D', color='purple', label=best_model_label)
         
         # misc settings
         axs[i].set_xlabel('Epoch')
@@ -91,20 +94,6 @@ def plot_results(configs : dict):
         axs[i].legend()     
 
     fig.savefig(str(plot_save_path), bbox_inches="tight")
-
-
-def add_f1(metrics : pd.DataFrame, val = False) -> pd.DataFrame:
-    """Calculates the f1-score element-wise given columns of a Pandas metrics dataframe"""
-
-    if val == True:
-        p = 'val_Precision'
-        r = 'val_Recall'
-    else:
-        p = 'Precision'
-        r = 'Recall'
-    
-    # if the denominator is 0, then f1=0, otherwise it is the harmonic mean
-    return np.where(metrics[p] + metrics[r] == 0, 0, 2  * (metrics[p] * metrics[r]) / (metrics[p] + metrics[r]))
 
 
 def cv_plot_results(configs : dict):
@@ -123,10 +112,6 @@ def cv_plot_results(configs : dict):
     for fold in range(len(fold_dirs)):
         # get metrics from csv
         fold_metrics = pd.read_csv(str(Path(fold_dirs[fold]) / 'metrics.csv'))
-
-        # add f1 columns to the dataframe
-        fold_metrics['f1'] = add_f1(fold_metrics)
-        fold_metrics['val_f1'] = add_f1(fold_metrics, val = True)
 
         # convert to np array and add metrics array to list 
         fold_metrics_np = fold_metrics.to_numpy()
