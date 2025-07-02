@@ -131,6 +131,10 @@ class Train(BaseModel):
         default=False,
         description="Option to use batch normalization after convolution layers in the UNet encoder/decoder"
     )
+    monitor_f1: bool = Field(
+        default=False,
+        description="Option to monitor F1-Score instead of Binary Cross Entropy loss"
+    )
 
     @model_validator(mode='after')
     def pretrained_backbone(self) -> 'Train':

@@ -32,18 +32,37 @@ def single_loop(configs: dict):
     print(f"Training images: {os_sorted(configs['training_set'])}")
     print(f"Validation images: {os_sorted(configs['validation_set'])}\n")
 
+    # define F1-Score for operating on images (need to flatten y_pred and y_true)
+    class F1ScoreSeg(tf.keras.metrics.F1Score):
+        def __init__(self, threshold=0.5, name='F1Score', **kwargs):
+            super().__init__(threshold=threshold, name=name, **kwargs)
+
+        def update_state(self, y_true, y_pred, **kwargs):
+            # flatten before calling update_state method
+            y_true = tf.reshape(y_true, [-1, 1])
+            y_pred = tf.reshape(y_pred, [-1, 1])
+            super().update_state(self, y_pred, y_true, **kwargs)
+
     # load model
     print(f"Loading and compiling `{configs['encoder_name']}-{configs['decoder_name']}`...\n")
     model = models.load_UNet(configs)
     model.compile(
         optimizer = Adam(learning_rate=configs['learning_rate']), 
         loss = 'binary_crossentropy', 
-        metrics = ['accuracy', 'Precision', 'Recall']
+        metrics = ['Precision', 'Recall', F1ScoreSeg()]
     )
 
     # save model summary if desired
     if configs['model_summary']:
         utils.save_model_summary(configs, model)
+    
+    # choose which metric to monitor for ModelCheckpoint
+    if configs['monitor_f1']:
+        monitor='val_F1Score'
+        mode='max'
+    else:
+        monitor='val_loss'
+        mode='min'
 
     # define training callbacks
     callbacks = [
@@ -56,7 +75,9 @@ def single_loop(configs: dict):
             str(configs['results_dir'] / 'best_model.keras'), 
             verbose=1, 
             save_best_only=True, 
-            save_weights_only=False
+            save_weights_only=False,
+            monitor=monitor,
+            mode=mode
         )
     ]
     if configs['early_stopping']:
