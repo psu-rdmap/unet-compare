@@ -47,7 +47,7 @@ class F1ScoreBinSeg(Metric):
         metrics_utils.update_confusion_matrix_variables(
             {
                 metrics_utils.ConfusionMatrix.TRUE_POSITIVES: self.true_positives,  # noqa: E501
-                metrics_utils.ConfusionMatrix.FALSE_POSITIVES: self.true_positives,
+                metrics_utils.ConfusionMatrix.FALSE_POSITIVES: self.false_positives,
                 metrics_utils.ConfusionMatrix.FALSE_NEGATIVES: self.false_negatives,  # noqa: E501
             },
             y_true,
