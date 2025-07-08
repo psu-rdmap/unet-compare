@@ -11,7 +11,7 @@ from keras.api.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
 from keras import backend as K
 from pathlib import Path
 from natsort import os_sorted
-from F1Score import F1ScoreBinSeg
+from f1_score import F1ScoreBinSeg
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
