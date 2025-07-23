@@ -162,8 +162,8 @@ def cv_plot_results(configs : dict):
 
     # settings specific to each plot 
     titles = ['BCE Loss', 'Precision', 'Recall', 'F1-Score']
-    train_metrics_idcs = [4, 1, 2, 9]
-    val_metrics_idcs = [8, 5, 6, 10]
+    train_metrics_idcs = [4, 2, 3, 1]
+    val_metrics_idcs = [8, 6, 7, 5]
 
     for i in range(len(axs)):
         # means and stds
