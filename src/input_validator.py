@@ -359,6 +359,18 @@ class Train(BaseModel):
         return self
     
     @model_validator(mode='after')
+    def generated_dataset_dir(self) -> 'Train':
+        """Create the generated dataset directory following a naming scheme if one is not provided"""
+
+        if self.generated_dataset_dir is None:
+            now = datetime.now()
+            self.generated_dataset_dir = 'dataset_' + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+        
+        self.generated_dataset_dir = ROOT_DIR / self.generated_dataset_dir
+
+        return self
+    
+    @model_validator(mode='after')
     def get_image_shape(self) -> 'Train':
         """Get the image shape for model instantiation and make sure it is consistent"""
         
@@ -457,18 +469,6 @@ class Inference(BaseModel):
             self.results_dir = 'results_' + self.dataset_name + '_' + self.operation_mode + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
         
         self.results_dir = ROOT_DIR / self.results_dir
-
-        return self
-    
-    @model_validator(mode='after')
-    def generated_dataset_dir(self) -> 'Train':
-        """Create the generated dataset directory following a naming scheme if one is not provided"""
-
-        if self.generated_dataset_dir is None:
-            now = datetime.now()
-            self.generated_dataset_dir = 'dataset_' + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
-        
-        self.generated_dataset_dir = ROOT_DIR / self.generated_dataset_dir
 
         return self
     

@@ -22,14 +22,10 @@ def create_train_dataset(configs: dict) -> dict:
     data_dir: Path = configs['root_dir'] / 'data' / configs['dataset_name']
     dataset_dir: Path = configs['generated_dataset_dir']
 
-    # Step 1: remove existing directory if it exists
-    if dataset_dir.exists():
-        shutil.rmtree(dataset_dir)
-
-    # Step 2: generate train/val filename lists
+    # Step 1: generate train/val filename lists
     configs['training_set'], configs['validation_set'] = split_data(configs)
 
-    # Step 3: convert filename stems to full paths
+    # Step 2: convert filename stems to full paths
     img_ext = next(iter({file.suffix for file in (data_dir / 'images').iterdir()}))
     ann_ext = next(iter({file.suffix for file in (data_dir / 'annotations').iterdir()}))
 
@@ -38,17 +34,17 @@ def create_train_dataset(configs: dict) -> dict:
     train_ann_paths = [data_dir / 'annotations' / (file + ann_ext) for file in configs['training_set']]
     val_ann_paths = [data_dir / 'annotations' / (file + ann_ext) for file in configs['validation_set']]
 
-    # Step 4: populate dataset tree
+    # Step 3: populate dataset tree
     copy_files(train_img_paths, dataset_dir / 'images' / 'train')
     copy_files(val_img_paths, dataset_dir / 'images' / 'val')
     copy_files(train_ann_paths, dataset_dir / 'annotations' / 'train')
     copy_files(val_ann_paths, dataset_dir / 'annotations' / 'val')
 
-    # Step 5: augment training set
+    # Step 4: augment training set
     if configs['augment']:
         augment_dataset(dataset_dir / 'images' / 'train', img_ext, ann_ext)
 
-    # Step 6: create Dataset Tensors
+    # Step 5: create Dataset Tensors
     train_dataset = tf.data.Dataset.list_files(str(dataset_dir / 'images' / 'train' / '*'))
     val_dataset = tf.data.Dataset.list_files(str(dataset_dir / 'images' / 'val' / '*'))
 
