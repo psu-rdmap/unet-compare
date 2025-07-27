@@ -12,6 +12,7 @@ from keras import backend as K
 from pathlib import Path
 from natsort import os_sorted
 from f1_score import F1ScoreBinSeg
+from copy import deepcopy
 os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -195,7 +196,7 @@ def main():
 
     # validate and print configs
     configs = input_validator.validate(configs)
-    utils.print_save_configs(configs.copy())
+    utils.print_save_configs(deepcopy(configs))
 
     # training or inference
     if configs['operation_mode'] == 'train':

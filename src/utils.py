@@ -37,6 +37,7 @@ def print_save_configs(configs : dict):
         # make Path objects strings for serialization
         configs['root_dir'] = str(configs['root_dir'])
         configs['results_dir'] = str(configs['results_dir'])
+        configs['generated_dataset_dir'] = str(configs['generated_dataset_dir'])
         json.dump(configs, con)
 
 
