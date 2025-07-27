@@ -359,12 +359,12 @@ class Train(BaseModel):
         return self
     
     @model_validator(mode='after')
-    def generated_dataset_dir(self) -> 'Train':
+    def define_generated_dataset_dir(self) -> 'Train':
         """Create the generated dataset directory following a naming scheme if one is not provided"""
 
         if self.generated_dataset_dir is None:
             now = datetime.now()
-            self.generated_dataset_dir = 'dataset_' + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+            self.generated_dataset_dir = 'dataset' + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
         
         self.generated_dataset_dir = ROOT_DIR / self.generated_dataset_dir
 
