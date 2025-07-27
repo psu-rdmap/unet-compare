@@ -45,6 +45,7 @@ class Train(BaseModel):
     operation_mode: str
     dataset_name: str
     results_dir: Optional[str | Path]
+    generated_dataset_dir : Optional[str | Path]
     input_shape: Tuple[int, int, int] = None
     encoder_name: Literal['UNet', 'EfficientNetB7'] = Field(
         default='UNet',
