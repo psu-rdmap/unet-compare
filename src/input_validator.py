@@ -30,7 +30,11 @@ class General(BaseModel):
     results_dir: Optional[str] = Field(
         default=None,
         description="Path for results directory relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
-    )    
+    )
+    generated_dataset_dir: Optional[str] = Field(
+        default=None,
+        description="Directory path for generating dataset relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
+    )
     model_config = ConfigDict(
         extra='allow',
     )
@@ -452,6 +456,18 @@ class Inference(BaseModel):
             self.results_dir = 'results_' + self.dataset_name + '_' + self.operation_mode + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
         
         self.results_dir = ROOT_DIR / self.results_dir
+
+        return self
+    
+    @model_validator(mode='after')
+    def generated_dataset_dir(self) -> 'Train':
+        """Create the generated dataset directory following a naming scheme if one is not provided"""
+
+        if self.generated_dataset_dir is None:
+            now = datetime.now()
+            self.generated_dataset_dir = 'dataset_' + now.strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+        
+        self.generated_dataset_dir = ROOT_DIR / self.generated_dataset_dir
 
         return self
     

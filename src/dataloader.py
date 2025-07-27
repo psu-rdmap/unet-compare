@@ -20,7 +20,7 @@ def create_train_dataset(configs: dict) -> dict:
     """Creates the training dataset based on the configs"""
 
     data_dir: Path = configs['root_dir'] / 'data' / configs['dataset_name']
-    dataset_dir: Path = configs['root_dir'] / 'dataset'
+    dataset_dir: Path = configs['generated_dataset_dir']
 
     # Step 1: remove existing directory if it exists
     if dataset_dir.exists():
