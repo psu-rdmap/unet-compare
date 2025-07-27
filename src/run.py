@@ -98,7 +98,7 @@ def single_loop(configs: dict):
 
     print("Cleaning up...\n")
     # remove training dataset and clear memory
-    shutil.rmtree(configs['root_dir'] / 'dataset')
+    shutil.rmtree(configs['generated_dataset_dir'])
     del model, inf_model, dataset, inf_dataset, history, callbacks
     K.clear_session()
     gc.collect()
