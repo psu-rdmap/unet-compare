@@ -7,9 +7,9 @@ def list_of_ints(arg) -> list[int, int]:
 
 # get directory paths from user
 parser = argparse.ArgumentParser(description='Image rescaling')
-parser.add_argument('--src_dir', type=str, help="Path to directory with source images")
-parser.add_argument('--dest_dir', type=str, help="Path to directory for resized images")
-parser.add_argument('--output_shape', type=list_of_ints, help="Size of resized images, not including channels (default is 1024,1024)")
+parser.add_argument('--in_dir', type=str, help="Path to directory with input images relative to /path/to/unet-compare/")
+parser.add_argument('--out_dir', type=str, help="Path to directory for saving downscaled images relative to /path/to/unet-compare/")
+parser.add_argument('--out_shape', type=list_of_ints, help="Shape to downscale input images to (e.g., [1024, 1024])")
 args = parser.parse_args()
 
 def resize_image(src_dir, dest_dir, out_shape=[1024, 1024]):

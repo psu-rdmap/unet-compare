@@ -12,25 +12,25 @@ ROOT = Path.cwd()
 parser = argparse.ArgumentParser(description='CM2 Algorithm')
 
 parser.add_argument(
-    '--image_dir', 
+    '--tem_dir', 
     type=str,
     default=None, 
-    help="Path to directory with images relative to /path/to/unet-compare/ to optionally use as background"
+    help="Path to directory where TEM images corresponding to files in `pred_dir` relative to /path/to/unet-compare/"
 )
 parser.add_argument(
-    '--annotation_dir', 
+    '--ann_dir', 
     type=str, 
-    help="Path to directory with annotations relative to /path/to/unet-compare/"
+    help="Path to directory where annotation images corresponding to files in `pred_dir` relative to /path/to/unet-compare/"
 )
 parser.add_argument(
-    '--prediction_dir', 
+    '--pred_dir', 
     type=str, 
-    help="Path to directory with predictions relative to /path/to/unet-compare/"
+    help="Path to directory with model predictions relative to /path/to/unet-compare/"
 )
 parser.add_argument(
-    '--save_dir', 
+    '--out_dir', 
     type=str, 
-    help="Path to directory to save color mappings relative to /path/to/unet-compare/"
+    help="Path to directory for saving CM2 images relative to /path/to/unet-compare/"
 )
 args = parser.parse_args()
 
