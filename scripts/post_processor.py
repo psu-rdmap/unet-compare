@@ -391,18 +391,21 @@ def main():
             num_defects_true, defect_sizes_true, true_points, iou_img_true = algorithm(ann_img, None, None, GT_exists=GT_exists)
 
             tot_num_defects_true += num_defects_true
-            all_defect_sizes_true.update({fp.stem: defect_sizes_true})
+            for s in defect_sizes_true:
+                defect_sizes_true.update({fp.stem: s})
 
             num_defects, defect_sizes, iou_img, back_vis, iou_vis = algorithm(seg_img, back_img, true_points, GT_exists=GT_exists)
             
             tot_num_defects += num_defects
-            all_defect_sizes.update({fp.stem: defect_sizes})
+            for s in defect_sizes:
+                all_defect_sizes.update({fp.stem: s})
 
             # calculate and save IOU
             intersection = np.multiply(iou_img, iou_img_true)
             union = np.add(iou_img, iou_img_true) - intersection
             iou = np.sum(intersection)/np.sum(union)
-            iou_values.update({fp.stem: iou})
+            for i in iou:
+                iou_values.update({fp.stem: i})
 
             # save visualizations
             cv.imwrite(results_back_vis_dir / fp.name, back_vis)
@@ -412,7 +415,8 @@ def main():
             num_defects, defect_sizes, back_vis = algorithm(seg_img, back_img, None, GT_exists=GT_exists)
             
             tot_num_defects += num_defects
-            all_defect_sizes.update({fp.stem: defect_sizes})
+            for s in defect_sizes:
+                all_defect_sizes.update({fp.stem: s})
 
             # save visualization
             cv.imwrite(results_back_vis_dir / fp.name, back_vis)
