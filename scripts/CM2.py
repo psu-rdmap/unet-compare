@@ -9,7 +9,7 @@ import argparse, glob
 from datetime import datetime
 
 ROOT = Path(__file__).parent.parent
-results_path = ROOT / 'CM2' + datetime.now().strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+results_path = ROOT / ('CM2' + datetime.now().strftime('_(%Y-%m-%d)_(%H-%M-%S)'))
 
 parser = argparse.ArgumentParser(description='CM2 Algorithm')
 

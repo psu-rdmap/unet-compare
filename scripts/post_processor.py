@@ -14,7 +14,7 @@ import pandas as pd
 from scipy.spatial.distance import cityblock
 
 ROOT = Path(__file__).parent.parent
-results_path = ROOT / 'post_processing_results' + datetime.now().strftime('_(%Y-%m-%d)_(%H-%M-%S)')
+results_path = ROOT / ('post_processing_results' + datetime.now().strftime('_(%Y-%m-%d)_(%H-%M-%S)'))
 
 parser = argparse.ArgumentParser(description='Segmentation Images Post-Processing')
 

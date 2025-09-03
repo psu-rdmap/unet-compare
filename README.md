@@ -43,7 +43,7 @@ conda install cudatoolkit==11.8.0
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
-The project should now be installed. The following line checks which devices Tensorflow recognizes:
+The repository should now be installed. The following line checks which devices Tensorflow recognizes:
 ```bash
 python scripts/check_devices.py
 ```
