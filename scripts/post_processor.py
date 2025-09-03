@@ -416,7 +416,7 @@ def main():
             
             tot_num_defects += num_defects
             for s in defect_sizes:
-                all_defect_sizes.update({fp.stem: s})
+                all_defect_sizes.append([fp.stem, s])
 
             # save visualization
             cv.imwrite(results_back_vis_dir / fp.name, back_vis)
@@ -442,7 +442,7 @@ def main():
             iou_values_just_vals.append(row[:-1])
 
     # compute and save defect size histogram
-    bins = np.linspace(args.bins[0], args.bins[1], args.bins[2])
+    bins = np.linspace(args.histogram_bins[0], args.histogram_bins[1], int(args.histogram_bins[2]))
     seg_histogram, seg_bins = np.histogram(all_defect_sizes_just_vals, bins=bins, density=False)
     bar_width = max(bins)/len(bins-1)*0.2
     fig, ax = plt.subplots()
