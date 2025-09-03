@@ -429,17 +429,17 @@ def main():
 
     # generate list of defect sizes from dictionaries
     all_defect_sizes_just_vals = []
-    for key, val in all_defect_sizes:
-        all_defect_sizes_just_vals.append(val)
+    for row in all_defect_sizes:
+        all_defect_sizes_just_vals.append(row[:-1])
     
     if GT_exists:
         all_defect_sizes_true_just_vals = []
-        for key, val in all_defect_sizes_true:
-            all_defect_sizes_true_just_vals.append(val)
+        for row in all_defect_sizes_true:
+            all_defect_sizes_true_just_vals.append(row[:-1])
 
         iou_values_just_vals = []
-        for key, val in iou_values:
-            iou_values_just_vals.append(val)
+        for row in iou_values:
+            iou_values_just_vals.append(row[:-1])
 
     # compute and save defect size histogram
     bins = np.linspace(args.bins[0], args.bins[1], args.bins[2])
