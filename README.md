@@ -1,5 +1,5 @@
 # Overview
-This program implements U-Net architectures [1-3](#references) for _binary segmentation_, where a model is trained to map each pixel in an image to the range $[0,1]$. This was designed with transmission electron microscopy (TEM) images in mind, where the output pixel values are probabilities of belonging to a defect structure ($1$ is defect, $0$ is a non-defect). The ICCV paper this code was designed for is [4](#references).
+This program implements U-Net architectures [[1-3]](#references) for _binary segmentation_, where a model is trained to map each pixel in an image to the range $[0,1]$. This was designed with transmission electron microscopy (TEM) images in mind, where the output pixel values are probabilities of belonging to a defect structure ($1$ is defect, $0$ is a non-defect). The ICCV paper this code was designed for is [[4]](#references).
 
 This project implements four types of configurable architectures:
 - U-Net
@@ -106,33 +106,36 @@ If inferencing, there will instead be
 - Model predictions
 
 ### 4. TEM Segementation Post-Processing
-As discussed in [4](#references), segmentation is only an intermediate, but challenging, step for TEM image data. For post-processing, where defects are identified and their properties calculated, there exists [scripts/post_processor.py](scripts/post_processor.py) which implements three defect detection algorithms: Convex Hull and Approximate Contour (CHAC) [5](#references) for identifying convex grains, BubbleFinder for identifying circular cavities, voids, or bubbles [6](#references), and Bbox for fitting bounding boxes around contiguous white pixel regions.
+As discussed in [[4]](#references), segmentation is only an intermediate, but challenging, step for TEM image data. For post-processing, where defects are identified and their properties calculated, there exists [scripts/post_processor.py](scripts/post_processor.py) which implements three defect detection algorithms: Convex Hull and Approximate Contour (CHAC) [[5]](#references) for identifying convex grains, BubbleFinder for identifying circular cavities, voids, or bubbles [[6]](#references), and Bbox for fitting bounding boxes around contiguous white pixel regions.
 
 `post_processor.py` accepts the following input parameters:
 - `algorithm = CHAC | BubbleFinder | Bbox`
-- `in_dir` = Path to directory with input segmentation images relative to `/path/to/unet-compare/`
-- `out_dir` = Path to directory for saving post-processed segmentation images relative to `/path/to/unet-compare/`
+- `seg_dir` = Path to directory with input segmentation images relative to `/path/to/unet-compare/`
 - `img_scale` = Ratio describing the number of nanometers per pixel, assuming every image in `in_dir` has the same magnification
+- `histogram_bins` = Three space-delimited `linspace`-like values `start stop num` describing the bins used for computing defect size histograms
 - `tem_dir` = (Optional) Path to directory with original TEM images to be overlayed onto relative to `/path/to/unet-compare/`
+- `ann_dir` = (Optional) Path to directory with ground truth annotation images, if they exist, for additional ML model performance evaluations relative to `/path/to/unet-compare/`
+- `results_dir` = (Optional) Override default path to directory for saving results relative to `/path/to/unet-compare/`
 
 In return, it outputs the following:
 - Post-processed segmentation images, optionally overlayed onto their TEM image counterpart
-- CSV file with detected defects and their properties (size, location)
-- Defect property histograms 
+- CSV files with detected defects and their properties (size, location)
+- Defect property histogram
+- Text file wwith various information describing the run and output
 
 # Utility Scripts
 There also exists some helpful python scripts in [scripts/][scripts/] for performing various tasks.
 
-`CM2.py` applies confusion matrix color mapping (CM2) to a set of model predictions, as discussed in [4](#references), visualizing the prediction abilities of UNet models. It accepts the following input parameters:
-- `tem_dir` = Path to directory where TEM images corresponding to files in `pred_dir` relative to `/path/to/unet-compare/`
-- `ann_dir` = Path to directory where annotation images corresponding to files in `pred_dir` relative to `/path/to/unet-compare/`
+`CM2.py` applies confusion matrix color mapping (CM2) to a set of model predictions, as discussed in [[4]](#references), visualizing the prediction abilities of UNet models. It accepts the following input parameters:
+- `tem_dir` = Path to directory with training images corresponding to files in `pred_dir` relative to `/path/to/unet-compare/`
+- `ann_dir` = Path to directory with ground truth annotation images corresponding to files in `pred_dir` relative to `/path/to/unet-compare/`
 - `pred_dir` = Path to directory with model predictions relative to `/path/to/unet-compare/`
-- `out_dir` = Path to directory for saving CM2 images relative to `/path/to/unet-compare/`
+- `results_dir` = Path to directory for saving CM2 images relative to `/path/to/unet-compare/`
 
 `downscale_images.py` can be used to downscale TEM and annotation images (which are usually large 4K images) to a smaller size using a Lanczos filter. It accepts the following input parameters:
 - `in_dir` = Path to directory with input images relative to `/path/to/unet-compare/`
 - `out_dir` = Path to directory for saving downscaled images relative to `/path/to/unet-compare/`
-- `out_shape` = Shape to downscale input images to (e.g., `[1024, 1024]`)
+- `resize_shape` = Shape to downscale input images to (e.g., `[1024, 1024]`)
 
 `remove_models.py` can be used to remove any `.keras` model files in a directory tree recursively. This is useful for exporting model performance and prediction data without also included the large model files. It accepts the following input parameter:
 - `root_dir` = Path to the start of a directory tree where `.keras` files will be removed
