@@ -141,9 +141,14 @@ There also exists some helpful python scripts in [scripts/][scripts/] for perfor
 - `root_dir` = Path to the start of a directory tree where `.keras` files will be removed
 
 # References
-[1] O. Ronneberger, P. Fischer, and T. Brox, “U-Net: Convolutional Networks for Biomedical Image Segmentation,” MICCAI 2015. https://arxiv.org/abs/1505.04597 <br/>
+[1] O. Ronneberger, P. Fischer, and T. Brox, “U-Net: Convolutional Networks for Biomedical Image Segmentation,” MICCAI 2015. https://arxiv.org/abs/1505.04597 
+
 [2] Z. Zhou, M. Rahman, N. Tajbakhsh, and J. Liang, “UNet++: A Nested U-Net Architecture for Medical Image Segmentation,” DLMIA 2018. https://arxiv.org/abs/1807.10165
-[3] M. Tan and Q. V. Le, “EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks,” ICML 2019. https://arxiv.org/abs/1905.11946 <br/>
-[4] A. Ochoa, X. Xu, and X. Wang, "Improving U-Net Confidence on TEM Image Data with L2-Regularization, Transfer Learning, and Deep Fine-Tuning," ICCV-CV4MS 2025. https://arxiv.org/abs/2507.16779 <br/>
-[5] X. Xu, Z. Yu, W.-Y. Chen, A. Chen, A. Motta, and X. Wang, "Automated analysis of grain morphology in TEM images using convolutional neural network with CHAC algorithm," Journal of Nuclear Materials 2024. https://doi.org/10.1016/j.jnucmat.2023.154813 <br/>
+
+[3] M. Tan and Q. V. Le, “EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks,” ICML 2019. https://arxiv.org/abs/1905.11946
+
+[4] A. Ochoa, X. Xu, and X. Wang, "Improving U-Net Confidence on TEM Image Data with L2-Regularization, Transfer Learning, and Deep Fine-Tuning," ICCV-CV4MS 2025. https://arxiv.org/abs/2507.16779
+
+[5] X. Xu, Z. Yu, W.-Y. Chen, A. Chen, A. Motta, and X. Wang, "Automated analysis of grain morphology in TEM images using convolutional neural network with CHAC algorithm," Journal of Nuclear Materials 2024. https://doi.org/10.1016/j.jnucmat.2023.154813
+
 [6] X. Wang, K. Jin, C. Y. Wong, D. Chen, H. Bei, Y. Wang, M. Ziatdinov, W. J. Weber, Y. Zhang, J. Poplawsky, and K. L. More, Understanding effects of chemical complexity on helium bubble formation in Ni-based concentrated solid solution alloys based on elemental segregation measurements," Journal of Nuclear Materials 2022. https://doi.org/10.1016/j.jnucmat.2022.153902
