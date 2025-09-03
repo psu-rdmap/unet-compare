@@ -363,11 +363,11 @@ def main():
 
     # initialize counters and containers
     tot_num_defects = 0
-    all_defect_sizes = {}
+    all_defect_sizes = []
     if GT_exists:
         tot_num_defects_true = 0
-        all_defect_sizes_true = {}
-        iou_values = {}
+        all_defect_sizes_true = []
+        iou_values = []
 
     # loop through segmentation images
     for fp in in_fps:
@@ -392,20 +392,20 @@ def main():
 
             tot_num_defects_true += num_defects_true
             for s in defect_sizes_true:
-                defect_sizes_true.update({fp.stem: s})
+                defect_sizes_true.append([fp.stem, s])
 
             num_defects, defect_sizes, iou_img, back_vis, iou_vis = algorithm(seg_img, back_img, true_points, GT_exists=GT_exists)
             
             tot_num_defects += num_defects
             for s in defect_sizes:
-                all_defect_sizes.update({fp.stem: s})
+                all_defect_sizes.append([fp.stem, s])
 
             # calculate and save IOU
             intersection = np.multiply(iou_img, iou_img_true)
             union = np.add(iou_img, iou_img_true) - intersection
             iou = np.sum(intersection)/np.sum(union)
             for i in iou:
-                iou_values.update({fp.stem: i})
+                iou_values.append([fp.stem, i])
 
             # save visualizations
             cv.imwrite(results_back_vis_dir / fp.name, back_vis)
