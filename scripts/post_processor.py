@@ -14,13 +14,14 @@ import pandas as pd
 from scipy.spatial.distance import cityblock
 
 ROOT = Path(__file__).parent.parent
-results_path = ROOT / ('post_processing_results' + datetime.now().strftime('_(%Y-%m-%d)_(%H-%M-%S)'))
+results_dir = ROOT / ('post_processing_results' + datetime.now().strftime('_(%Y-%m-%d)_(%H-%M-%S)'))
 
 parser = argparse.ArgumentParser(description='Segmentation Images Post-Processing')
 
 parser.add_argument(
     '--algorithm', 
-    type=Literal['CHAC', 'BubbleFinder', 'BBox'], 
+    type=str,
+    choices=['CHAC', 'BubbleFinder', 'BBox'], 
     help="Type of post-processing algorithm to apply to segmentations (CHAC, BubbleFinder, BBox)"
 )
 parser.add_argument(
@@ -55,9 +56,9 @@ parser.add_argument(
 )
 parser.add_argument(
     '--results_dir', 
-    type=str | Path,
+    type=str,
     nargs='?',
-    default=results_path,
+    default=results_dir,
     help="(Optional) Override default path to directory for saving results relative to /path/to/unet-compare/"
 )
 
