@@ -75,13 +75,14 @@ def chac(seg_img: np.ndarray, back_img: np.ndarray, true_points: None | list, GT
     tuple[int, list[float], np.ndarray]
 ]:    
     # compute and visualize IOU if ground truth is available
-    if GT_exists:     
+    if GT_exists:
+        # initialize blank image for calculating IOU     
+        iou_img_calc = np.zeros(list(seg_img.shape)+[3], dtype='uint8')
         # if we are initializing ground truth (true_points is None), save the accepted polygon points, otherwise draw them for visualization
         if true_points is None:
             true_points_saved = []
         else:
-            # initialize blank image for IOU operations
-            iou_img_calc = np.zeros(list(seg_img.shape)+[3], dtype='uint8')
+            # initialize blank image for visualizing IOU
             iou_vis = iou_img_calc.copy()
             for p in true_points:
                 cv.fillPoly(iou_vis, p, (0, 255, 0))
@@ -147,13 +148,14 @@ def bubble_finder(seg_img: np.ndarray, back_img: np.ndarray, true_points: None |
 ]:
     
     # compute and visualize IOU if ground truth is available
-    if GT_exists:     
+    if GT_exists:
+        # initialize blank image for calculating IOU    
+        iou_img_calc = np.zeros(list(seg_img.shape)+[3], dtype='uint8')
         # if we are initializing ground truth (true_points is None), save the accepted points, otherwise draw them for visualization
         if true_points is None:
             true_points_saved = []
         else:
-            # initialize blank image for IOU operations
-            iou_img_calc = np.zeros(list(seg_img.shape)+[3], dtype='uint8')
+            # initialize blank image for visualizing IOU
             iou_vis = iou_img_calc.copy()
             for p in true_points:
                 cv.circle(iou_vis, center=(p[0], p[1]), radius=p[2], color=(0, 255, 0), thickness=-1)
@@ -240,13 +242,14 @@ def bbox(seg_img: np.ndarray, back_img: np.ndarray, true_points: None | list, GT
 ]:
     
     # compute and visualize IOU if ground truth is available
-    if GT_exists:     
+    if GT_exists:
+        # initialize blank image for calculating IOU
+        iou_img_calc = np.zeros(list(seg_img.shape)+[3], dtype='uint8')
         # if we are initializing ground truth (true_points is None), save the accepted polygon points, otherwise draw them for visualization
         if true_points is None:
             true_points_saved = []
         else:
-            # initialize blank image for IOU operations
-            iou_img_calc = np.zeros(list(seg_img.shape)+[3], dtype='uint8')
+            # initialize blank image for visualizing IOU
             iou_vis = iou_img_calc.copy()
             for p in true_points:
                 cv.rectangle(iou_vis, (p[0], p[1]), (p[0]+p[2], p[1]+p[3]), (0, 255, 0), -1)
@@ -299,15 +302,15 @@ def load_image(path: Path, flag = cv.IMREAD_GRAYSCALE | cv.IMREAD_COLOR) -> np.n
     return img
 
 
-def get_matching_filepath(target_fn: str, potential_fps: list[Path]) -> Path:
+def get_matching_filepath(target_fn: Path, potential_fps: list[Path]) -> Path:
     "Find the full filepath from a list of potential filepaths given just a filename"
     found_fp = None
     for fp in potential_fps:
-        if fp.stem == target_fn:
+        if fp.stem == target_fn.stem:
             found_fp = fp
     
     if found_fp is None:
-        raise ValueError(f'Could not find file in {potential_fps[0].parent.as_posix()} matching the file name {target_fn}')
+        raise ValueError(f'Could not find file in {potential_fps[0].parent} matching the file name for {target_fn}')
     else:
         return found_fp
 
@@ -430,16 +433,16 @@ def main():
     # generate list of defect sizes from dictionaries
     all_defect_sizes_just_vals = []
     for row in all_defect_sizes:
-        all_defect_sizes_just_vals.append(row[:-1])
+        all_defect_sizes_just_vals.append(row[-1])
     
     if GT_exists:
         all_defect_sizes_true_just_vals = []
         for row in all_defect_sizes_true:
-            all_defect_sizes_true_just_vals.append(row[:-1])
+            all_defect_sizes_true_just_vals.append(row[-1])
 
         iou_values_just_vals = []
         for row in iou_values:
-            iou_values_just_vals.append(row[:-1])
+            iou_values_just_vals.append(row[-1])
 
     # compute and save defect size histogram
     bins = np.linspace(args.histogram_bins[0], args.histogram_bins[1], int(args.histogram_bins[2]))
@@ -451,9 +454,9 @@ def main():
         l1_distance = cityblock(seg_histogram, true_histogram)
         bar_offset = bar_width*0.8
         ax.bar(true_bins[:-1]-bar_offset, true_histogram, width=bar_width, color='green', label='True', edgecolor='black')
-        ax.bar(seg_bins[:-1]+bar_offset, seg_bins, width=bar_width, color='purple', label='Prediction', edgecolor='black')   
+        ax.bar(seg_bins[:-1]+bar_offset, seg_histogram, width=bar_width, color='purple', label='Prediction', edgecolor='black')   
     else:
-        ax.bar(seg_bins[:-1], seg_bins, width=bar_width, color='purple', label='Prediction', edgecolor='black')   
+        ax.bar(seg_bins[:-1], seg_histogram, width=bar_width, color='purple', label='Prediction', edgecolor='black')   
     ax.legend()
     ax.set_xlabel('Defect Size [nm]')
     ax.set_ylabel('Counts')
