@@ -374,6 +374,8 @@ def main():
 
     # loop through segmentation images
     for fp in in_fps:
+        print(f"Processing {fp}", end='\r', flush=True)
+
         # load segmentation image
         seg_img = load_image(fp, flag=cv.IMREAD_GRAYSCALE)
 
@@ -391,11 +393,12 @@ def main():
         if GT_exists:
             ann_path = get_matching_filepath(fp, ann_fps)
             ann_img = load_image(ann_path, cv.IMREAD_GRAYSCALE)
-            num_defects_true, defect_sizes_true, true_points, iou_img_true = algorithm(ann_img, None, None, GT_exists=GT_exists)
+
+            num_defects_true, defect_sizes_true, iou_img_true, true_points = algorithm(ann_img, None, None, GT_exists=GT_exists)
 
             tot_num_defects_true += num_defects_true
             for s in defect_sizes_true:
-                defect_sizes_true.append([fp.stem, s])
+                all_defect_sizes_true.append([fp.stem, s])
 
             num_defects, defect_sizes, iou_img, back_vis, iou_vis = algorithm(seg_img, back_img, true_points, GT_exists=GT_exists)
             
@@ -404,11 +407,12 @@ def main():
                 all_defect_sizes.append([fp.stem, s])
 
             # calculate and save IOU
+            iou_img = iou_img / 255
+            iou_img_true = iou_img_true / 255
             intersection = np.multiply(iou_img, iou_img_true)
             union = np.add(iou_img, iou_img_true) - intersection
             iou = np.sum(intersection)/np.sum(union)
-            for i in iou:
-                iou_values.append([fp.stem, i])
+            iou_values.append([fp.stem, iou])
 
             # save visualizations
             cv.imwrite(results_back_vis_dir / fp.name, back_vis)
@@ -425,10 +429,10 @@ def main():
             cv.imwrite(results_back_vis_dir / fp.name, back_vis)
 
     # save data to csv files
-    pd.DataFrame(all_defect_sizes).to_csv(results_dir / 'defect_sizes.csv', index=True, sep='\t')
+    pd.DataFrame(all_defect_sizes).to_csv(results_dir / 'defect_sizes.csv', index=False, sep='\t')
     if GT_exists:
-        pd.DataFrame(all_defect_sizes_true).to_csv(results_dir / 'GT_defect_sizes.csv', index=True, sep='\t')
-        pd.DataFrame(iou_values).to_csv(results_dir / 'iou.csv', index=True, sep='\t')
+        pd.DataFrame(all_defect_sizes_true).to_csv(results_dir / 'GT_defect_sizes.csv', index=False, sep='\t')
+        pd.DataFrame(iou_values).to_csv(results_dir / 'iou.csv', index=False, sep='\t')
 
     # generate list of defect sizes from dictionaries
     all_defect_sizes_just_vals = []
@@ -465,7 +469,7 @@ def main():
     plt.close(fig)
     
     # save info to a text file
-    with open(results_dir / 'info.out', 'rw') as f:
+    with open(results_dir / 'info.out', 'w') as f:
         f.write(f'Selected algorithm: {args.algorithm}\n\n')
         f.write(f'Segmentation directory path: {seg_dir}\n')
         f.write(f'TEM directory path: {tem_dir}\n')
@@ -483,3 +487,4 @@ def main():
 
 
 main()
+print('\nDone.')

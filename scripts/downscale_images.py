@@ -5,9 +5,6 @@ import numpy as np
 
 ROOT = Path(__file__).parent.parent
 
-def list_of_ints(arg) -> list[int, int]:
-    return list(map(int, arg.split(',')))
-
 # get directory paths from user
 parser = argparse.ArgumentParser(description='Image rescaling')
 
@@ -23,12 +20,12 @@ parser.add_argument(
 )
 parser.add_argument(
     '--resize_shape', 
-    type=list_of_ints,
+    type=int,
+    nargs='+',
     default=[1024, 1024],
-    help="Shape to downscale input images to (e.g., [1024, 1024])"
+    help="Shape to downscale input images to (e.g., `1024 1024`)"
 )
 args = parser.parse_args()
-
 
 def load_image(path: Path) -> np.ndarray:
     img = cv.imread(path.as_posix(), cv.IMREAD_ANYCOLOR)

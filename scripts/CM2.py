@@ -9,7 +9,7 @@ import argparse, glob
 from datetime import datetime
 
 ROOT = Path(__file__).parent.parent
-results_path = ROOT / ('CM2' + datetime.now().strftime('_(%Y-%m-%d)_(%H-%M-%S)'))
+results_dir = ROOT / ('CM2' + datetime.now().strftime('_(%Y-%m-%d)_(%H-%M-%S)'))
 
 parser = argparse.ArgumentParser(description='CM2 Algorithm')
 
@@ -31,9 +31,9 @@ parser.add_argument(
 )
 parser.add_argument(
     '--results_dir', 
-    type=str | Path,
+    type=str,
     nargs='?',
-    default=results_path,
+    default=results_dir,
     help="(Optional) Override default path to directory for saving CM2 images relative to /path/to/unet-compare/" 
 )
 args = parser.parse_args()
@@ -43,21 +43,21 @@ if type(args.results_dir) == str:
     results_dir = ROOT / args.results_dir
 
 
-def load_image(path: Path, flag = cv.IMREAD_GRAYSCALE | cv.IMREAD_COLOR) -> np.ndarray:
-    img = cv.imread(path.as_posix(), flag)
+def load_image(path: Path) -> np.ndarray:
+    img = cv.imread(path.as_posix(), cv.IMREAD_GRAYSCALE)
     assert type(img) == np.ndarray, f"File at {path} could not be loaded!"
     return img
     
 
-def get_matching_filepath(target_fn: str, potential_fps: list[Path]) -> Path:
+def get_matching_filepath(target_fn: Path, potential_fps: list[Path]) -> Path:
     "Find the full filepath from a list of potential filepaths given just a filename"
     found_fp = None
     for fp in potential_fps:
-        if fp.stem == target_fn:
+        if fp.stem == target_fn.stem:
             found_fp = fp
     
     if found_fp is None:
-        raise ValueError(f'Could not find file in {potential_fps[0].parent.as_posix()} matching the file name {target_fn}')
+        raise ValueError(f'Could not find file in {potential_fps[0].parent} matching the file name {target_fn}')
     else:
         return found_fp
         
@@ -78,13 +78,13 @@ def CM2_single_image(img_path: Path, ann_path: Path, pred_path: Path, results_di
     """Apply the CM2 algorithm to a single image, annotation, prediction pair and overlay onto the image background is None"""
     
     # load images
-    img = load_image(img_path, flag=cv.IMREAD_COLOR)
-    ann = load_image(ann_path, flag=cv.IMREAD_GRAYSCALE)
-    pred = load_image(pred_path, flag=cv.IMREAD_GRAYSCALE)
+    img = load_image(img_path)
+    ann = load_image(ann_path)
+    pred = load_image(pred_path)
 
     # check shapes
-    assert pred.shape == img.shape[:2], f"Expected training image and prediction to have the same shape. \
-        Got an image at {img_path} with shape {img.shape[:2]} and prediction {pred_path} with shape {pred.shape}"
+    assert pred.shape == img.shape, f"Expected training image and prediction to have the same shape. \
+        Got an image at {img_path} with shape {img.shape} and prediction {pred_path} with shape {pred.shape}"
     assert pred.shape == ann.shape, f"Expected annotation and prediction to have the same shape. \
         Got an annotation at {ann_path} with shape {ann.shape} and prediction {pred_path} with shape {pred.shape}"
 
