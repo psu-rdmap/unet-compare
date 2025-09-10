@@ -31,10 +31,6 @@ class General(BaseModel):
         default=None,
         description="Path for results directory relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
     )
-    generated_dataset_dir: Optional[str] = Field(
-        default=None,
-        description="Directory path for generating dataset relative to /path/to/unet-compare/. Give it `null` or ignore it to use default naming scheme"
-    )
     model_config = ConfigDict(
         extra='allow',
     )
@@ -45,7 +41,7 @@ class Train(BaseModel):
     operation_mode: str
     dataset_name: str
     results_dir: Optional[str | Path]
-    generated_dataset_dir : Optional[str | Path]
+    generated_dataset_dir: Path = None
     input_shape: Tuple[int, int, int] = None
     encoder_name: Literal['UNet', 'EfficientNetB7'] = Field(
         default='UNet',
@@ -360,7 +356,7 @@ class Train(BaseModel):
     
     @model_validator(mode='after')
     def define_generated_dataset_dir(self) -> 'Train':
-        """Create the generated dataset directory following a naming scheme if one is not provided"""
+        """Create the generated dataset directory following a naming scheme"""
 
         if self.generated_dataset_dir is None:
             now = datetime.now()
