@@ -79,7 +79,7 @@ The next step is to create a configs input file in `configs/` following the inst
 
 The script `run.py` is responsible for validating input configs and training models or inferencing with trained ones.
 ```bash
-python scr/run.py configs/<configs_file>.json
+python src/run.py configs/<configs_file>.json
 ```
 If you incorrectly defined any configs, an error will be thrown. Otherwise, operation will commence!
 
@@ -135,7 +135,7 @@ There also exists some helpful python scripts in [scripts/][scripts/] for perfor
 `downscale_images.py` can be used to downscale TEM and annotation images (which are usually large 4K images) to a smaller size using a Lanczos filter. It accepts the following input parameters:
 - `in_dir` = Path to directory with input images relative to `/path/to/unet-compare/`
 - `out_dir` = Path to directory for saving downscaled images relative to `/path/to/unet-compare/`
-- `resize_shape` = Shape to downscale input images to (e.g., `[1024, 1024]`)
+- `resize_shape` = Shape to downscale input images to like `1024,1024`
 
 `remove_models.py` can be used to remove any `.keras` model files in a directory tree recursively. This is useful for exporting model performance and prediction data without also included the large model files. It accepts the following input parameter:
 - `root_dir` = Path to the start of a directory tree where `.keras` files will be removed
