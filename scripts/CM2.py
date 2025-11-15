@@ -78,13 +78,17 @@ def CM2_single_image(img_path: Path, ann_path: Path, pred_path: Path, results_di
     """Apply the CM2 algorithm to a single image, annotation, prediction pair and overlay onto the image background is None"""
     
     # load images
-    img = load_image(img_path)
+    if img_path is not None:
+        img = load_image(img_path)
+    else:
+        img = None
     ann = load_image(ann_path)
     pred = load_image(pred_path)
 
     # check shapes
-    assert pred.shape == img.shape, f"Expected training image and prediction to have the same shape. \
-        Got an image at {img_path} with shape {img.shape} and prediction {pred_path} with shape {pred.shape}"
+    if img is not None:
+        assert pred.shape == img.shape, f"Expected training image and prediction to have the same shape. \
+            Got an image at {img_path} with shape {img.shape} and prediction {pred_path} with shape {pred.shape}"
     assert pred.shape == ann.shape, f"Expected annotation and prediction to have the same shape. \
         Got an annotation at {ann_path} with shape {ann.shape} and prediction {pred_path} with shape {pred.shape}"
 
@@ -99,7 +103,10 @@ def CM2_single_image(img_path: Path, ann_path: Path, pred_path: Path, results_di
     fn_mask = get_mask(ann_bin, pred_bin, compare_condition=(1,0))
 
     # define background base channel
-    base_channel = np.multiply(tn_mask, img)
+    if img is not None:
+        base_channel = np.multiply(tn_mask, img)
+    else:
+        base_channel = np.zeros(pred.shape)
     
     # define color channels as base channel overlayed with masks
     b_channel = np.add(base_channel, fp_mask*255).astype('uint8')
@@ -116,10 +123,13 @@ def CM2_single_image(img_path: Path, ann_path: Path, pred_path: Path, results_di
 
 def main():
     # make sure all input directories exist
-    img_dir = Path(ROOT / args.img_dir)
+    if args.img_dir is not None:
+        img_dir = Path(ROOT / args.img_dir)
+        assert img_dir.exists(), f"tem_dir {img_dir} does not exist!"
+    else:
+        img_dir = None
     ann_dir = Path(ROOT / args.ann_dir)
     pred_dir = Path(ROOT / args.pred_dir)
-    assert img_dir.exists(), f"tem_dir {img_dir} does not exist!"
     assert ann_dir.exists(), f"ann_dir {ann_dir} does not exist!"
     assert pred_dir.exists(), f"pred_dir {pred_dir} does not exist!"
 
@@ -128,14 +138,18 @@ def main():
     results_dir.mkdir(parents=True)
     
     # get file paths in each directory
-    img_fps = [p for p in img_dir.iterdir() if p.is_file()]
+    if img_dir is not None:
+        img_fps = [p for p in img_dir.iterdir() if p.is_file()]
     ann_fps = [p for p in ann_dir.iterdir() if p.is_file()]
     pred_fps = [p for p in pred_dir.iterdir() if p.is_file()]
 
     # loop through preds
     for pred_path in pred_fps:
         # find corresponding TEM and annotation images
-        tem_path = get_matching_filepath(pred_path, img_fps)
+        if img_dir is not None:
+            tem_path = get_matching_filepath(pred_path, img_fps)
+        else:
+            tem_path = None
         ann_path = get_matching_filepath(pred_path, ann_fps)
 
         # run CM2 algroithm
