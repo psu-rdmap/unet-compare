@@ -40,7 +40,11 @@ def single_loop(configs: dict):
     model.compile(
         optimizer = Adam(learning_rate=configs['learning_rate']), 
         loss = 'binary_crossentropy', 
-        metrics = ['Precision', 'Recall', F1ScoreBinSeg(name='F1Score')]
+        metrics = [
+            keras.metrics.Precision(thresholds=configs['metric_threshold']),
+            keras.metrics.Recall(thresholds=configs['metric_threshold']),
+            F1ScoreBinSeg(name='F1Score', thresholds=configs['metric_threshold'])
+        ]
     )
 
     # save model summary if desired

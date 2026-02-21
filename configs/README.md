@@ -80,6 +80,16 @@ The following configs apply when `operation_mode` is `train` in the input file.
     - **Expected values**: `float`
     - **Default**: `0.0`
 
+- `monitor_f1`
+    - **Definition**: Option to monitor F1-Score instead of Binary Cross Entropy loss
+    - **Expected values**: `bool`
+    - **Default**: `false`
+
+- `metric_threshold`
+    - **Definition**: Threshold to use when deciding if a prediction is positive or negative. This should be between `0.0` and `1.0`
+    - **Expected values**: `float`
+    - **Default**: `0.5`
+
 - `batch_size`
     - **Definition**: number of image-annotation pairs to use in a single batch during training. The weight vector is updated via backpropagation after each batch is processed. This should be a power of 2 for computational efficiency
     - **Expected values**: `int`

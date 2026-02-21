@@ -136,6 +136,11 @@ class Train(BaseModel):
         default=False,
         description="Option to monitor F1-Score instead of Binary Cross Entropy loss"
     )
+    metric_threshold: PositiveFloat = Field(
+        default=0.5,
+        lt=1.0,
+        description='Threshold to use when deciding if prediction is positive or negative'
+    )
 
     @model_validator(mode='after')
     def pretrained_backbone(self) -> 'Train':
