@@ -68,7 +68,7 @@ def plot_results(configs : dict):
     fig, axs = plt.subplots(4, 1, figsize=(12,20))
 
     titles = ['BCE Loss', 'Precision', 'Recall', 'F1-Score']
-    y_axes = ['loss', 'Precision', 'Recall', 'F1Score']
+    y_axes = ['loss', 'precision', 'recall', 'F1Score']
 
     for i in range(len(axs)):
         y1 = y_axes[i]
